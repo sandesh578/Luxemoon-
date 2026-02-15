@@ -4,6 +4,14 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { sendOrderStatusSMS } from "@/lib/notifications";
 import { logger } from "@/lib/logger";
+import { getSession } from "@/lib/auth";
+
+async function verifyAdmin() {
+  const session = await getSession();
+  if (!session) {
+    throw new Error("Unauthorized");
+  }
+}
 
 // --- ORDER ACTIONS ---
 
@@ -15,6 +23,7 @@ export async function updateOrderStatus(
   rejectionReason?: string
 ) {
   try {
+    await verifyAdmin();
     const order = await prisma.order.findUnique({ where: { id: orderId } });
     if (!order) return { success: false, error: "Order not found" };
 
@@ -41,6 +50,7 @@ export async function updateOrderStatus(
 // --- CONFIG ACTIONS ---
 
 export async function updateSiteConfig(data: any) {
+  await verifyAdmin();
   await prisma.siteConfig.update({
     where: { id: 1 },
     data: {
@@ -61,6 +71,7 @@ export async function updateSiteConfig(data: any) {
 // --- PRODUCT ACTIONS ---
 
 export async function createProduct(data: any) {
+  await verifyAdmin();
   await prisma.product.create({
     data: {
       ...data,
@@ -73,6 +84,7 @@ export async function createProduct(data: any) {
 }
 
 export async function updateProduct(id: string, data: any) {
+  await verifyAdmin();
   await prisma.product.update({
     where: { id },
     data
@@ -83,6 +95,7 @@ export async function updateProduct(id: string, data: any) {
 }
 
 export async function deleteProduct(id: string) {
+  await verifyAdmin();
   await prisma.product.delete({ where: { id } });
   revalidatePath('/admin/products');
   revalidatePath('/shop');
@@ -92,6 +105,7 @@ export async function deleteProduct(id: string) {
 // --- REVIEW ACTIONS ---
 
 export async function deleteReview(id: string) {
+  await verifyAdmin();
   await prisma.review.delete({ where: { id } });
   revalidatePath('/admin/reviews');
   return { success: true };
@@ -100,6 +114,7 @@ export async function deleteReview(id: string) {
 // --- BLACKLIST ACTIONS ---
 
 export async function addToBlacklist(phone: string, reason: string) {
+  await verifyAdmin();
   try {
     await prisma.blockedCustomer.create({
       data: { phone, reason }
@@ -112,6 +127,7 @@ export async function addToBlacklist(phone: string, reason: string) {
 }
 
 export async function removeFromBlacklist(id: string) {
+  await verifyAdmin();
   await prisma.blockedCustomer.delete({ where: { id } });
   revalidatePath('/admin/customers');
   return { success: true };

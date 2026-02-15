@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function AdminReviews() {
   const reviews = await prisma.review.findMany({ 
-    orderBy: { date: 'desc' },
+    orderBy: { createdAt: 'desc' },
     include: { product: true }
   });
 
@@ -28,7 +28,7 @@ export default async function AdminReviews() {
           <tbody className="divide-y divide-stone-100">
             {reviews.map(r => (
               <tr key={r.id}>
-                <td className="p-4 text-stone-500">{new Date(r.date).toLocaleDateString()}</td>
+                <td className="p-4 text-stone-500">{new Date(r.createdAt).toLocaleDateString()}</td>
                 <td className="p-4 font-bold">{r.userName}</td>
                 <td className="p-4 text-xs">{r.product.name}</td>
                 <td className="p-4">{r.rating} / 5</td>

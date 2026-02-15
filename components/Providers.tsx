@@ -15,6 +15,7 @@ export interface Product {
   images: string[];
   features: string[];
   stock: number;
+  videoUrl?: string | null;
 }
 
 export interface CartItem extends Product {
