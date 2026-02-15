@@ -1,8 +1,12 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
 
-const secretKey = "secret"; // Use process.env.JWT_SECRET in production
+const secretKey = process.env.JWT_SECRET || "default-secret-change-me-in-prod";
+
+if (process.env.NODE_ENV === 'production' && secretKey === "default-secret-change-me-in-prod") {
+  console.warn("WARNING: Using default JWT_SECRET in production. This is insecure.");
+}
+
 const key = new TextEncoder().encode(secretKey);
 
 export async function encrypt(payload: any) {
@@ -23,5 +27,9 @@ export async function decrypt(input: string): Promise<any> {
 export async function getSession() {
   const session = (await cookies()).get("session")?.value;
   if (!session) return null;
-  return await decrypt(session);
+  try {
+    return await decrypt(session);
+  } catch (error) {
+    return null;
+  }
 }

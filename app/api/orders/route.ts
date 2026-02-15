@@ -5,6 +5,8 @@ import { sendOrderNotificationEmail } from '@/lib/notifications';
 import { logger } from '@/lib/logger';
 import { headers } from 'next/headers';
 
+export const runtime = 'nodejs';
+
 const OrderSchema = z.object({
   customerName: z.string().min(1),
   phone: z.string().min(10),
@@ -16,16 +18,17 @@ const OrderSchema = z.object({
   items: z.array(z.object({
     productId: z.string(),
     quantity: z.number().min(1),
-    price: z.number()
+    price: z.number().optional() // Client price is ignored for security
   })),
-  total: z.number()
+  total: z.number().optional() // Client total is ignored for security
 });
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const headersList = await headers();
-    const ip = headersList.get('x-forwarded-for') || 'unknown';
+    const forwardedFor = headersList.get('x-forwarded-for');
+    const ip = forwardedFor ? forwardedFor.split(',')[0] : 'unknown';
     
     // 1. Rate Limiting (Simple DB Check)
     const recentOrders = await prisma.order.count({
@@ -63,17 +66,36 @@ export async function POST(req: Request) {
       }
     }
 
-    // 4. Transaction: Verify stock -> Create Order -> Decrement Stock
+    // 4. Transaction: Verify stock -> Calculate Price -> Create Order -> Decrement Stock
     const order = await prisma.$transaction(async (tx) => {
-      // Verify Stock
+      let calculatedTotal = 0;
+      const orderItemsData = [];
+
+      // Validate Items & Calculate Server-Side Price
       for (const item of data.items) {
         const product = await tx.product.findUnique({ where: { id: item.productId } });
-        if (!product || product.stock < item.quantity) {
-          throw new Error(`Insufficient stock for product ${product?.name || item.productId}`);
+        
+        if (!product) {
+          throw new Error(`Product not found: ${item.productId}`);
         }
+        
+        if (product.stock < item.quantity) {
+          throw new Error(`Insufficient stock for product: ${product.name}`);
+        }
+
+        // Security: Always use DB price, ignore client price
+        const unitPrice = data.isInsideValley ? product.priceInside : product.priceOutside;
+        const lineTotal = unitPrice * item.quantity;
+        calculatedTotal += lineTotal;
+
+        orderItemsData.push({
+          productId: item.productId,
+          quantity: item.quantity,
+          price: unitPrice
+        });
       }
 
-      // Create Order
+      // Create Order with Calculated Values
       const newOrder = await tx.order.create({
         data: {
           customerName: data.customerName,
@@ -82,22 +104,18 @@ export async function POST(req: Request) {
           district: data.district,
           address: data.address,
           isInsideValley: data.isInsideValley,
-          total: data.total,
+          total: calculatedTotal,
           ipAddress: ip,
           idempotencyKey: data.idempotencyKey,
           items: {
-            create: data.items.map(item => ({
-              productId: item.productId,
-              quantity: item.quantity,
-              price: item.price
-            }))
+            create: orderItemsData
           }
         },
         include: { items: true }
       });
 
       // Decrement Stock
-      for (const item of data.items) {
+      for (const item of orderItemsData) {
         await tx.product.update({
           where: { id: item.productId },
           data: { stock: { decrement: item.quantity } }
@@ -116,8 +134,9 @@ export async function POST(req: Request) {
   } catch (error) {
     logger.error('Order creation failed', error);
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Invalid data provided' }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid data provided', details: error.errors }, { status: 400 });
     }
-    return NextResponse.json({ error: 'Order creation failed. Please check stock or try again.' }, { status: 400 });
+    const errorMessage = error instanceof Error ? error.message : 'Order creation failed';
+    return NextResponse.json({ error: errorMessage }, { status: 400 });
   }
 }

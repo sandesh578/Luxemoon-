@@ -1,11 +1,18 @@
 import { Resend } from 'resend';
 import { logger } from './logger';
 
-const resend = new Resend(process.env.RESEND_API_KEY || 're_123');
+// Lazy init or safe init
+const getResendClient = () => {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return null;
+  return new Resend(key);
+};
 
 export async function sendOrderNotificationEmail(order: any) {
-  if (!process.env.RESEND_API_KEY) {
-    logger.info('Mocking Email Send', { orderId: order.id });
+  const resend = getResendClient();
+
+  if (!resend) {
+    logger.info('Mocking Email Send (No API Key)', { orderId: order.id });
     return;
   }
 

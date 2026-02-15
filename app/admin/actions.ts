@@ -13,7 +13,13 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
   'CANCELLED': []  // End state
 };
 
-export async function updateOrderStatus(orderId: string, newStatus: string, phone: string, lastUpdatedAt: Date) {
+export async function updateOrderStatus(
+  orderId: string, 
+  newStatus: string, 
+  phone: string, 
+  lastUpdatedAt: Date,
+  rejectionReason?: string
+) {
   try {
     const order = await prisma.order.findUnique({ where: { id: orderId } });
     
@@ -26,21 +32,20 @@ export async function updateOrderStatus(orderId: string, newStatus: string, phon
     }
 
     // 2. State Transition Check
-    const allowed = VALID_TRANSITIONS[order.status];
-    // Allow admin to force update if needed, but logging it. For strictness, uncomment below:
-    /*
-    if (!allowed.includes(newStatus) && order.status !== newStatus) {
-      return { success: false, error: `Cannot change status from ${order.status} to ${newStatus}` };
+    if (newStatus === 'CANCELLED' && !rejectionReason && order.status !== 'CANCELLED') {
+       // Optional: Enforce reason for cancellation
     }
-    */
 
     // 3. Update with Optimistic Lock
     const result = await prisma.order.updateMany({
       where: { 
         id: orderId,
-        updatedAt: order.updatedAt // Ensure it hasn't changed since fetch
+        updatedAt: order.updatedAt 
       },
-      data: { status: newStatus }
+      data: { 
+        status: newStatus,
+        rejectionReason: newStatus === 'CANCELLED' ? rejectionReason : undefined
+      }
     });
 
     if (result.count === 0) {
@@ -49,8 +54,13 @@ export async function updateOrderStatus(orderId: string, newStatus: string, phon
 
     // 4. Notifications
     if (['CONFIRMED', 'SHIPPED'].includes(newStatus)) {
-      // Fire and forget
       sendOrderStatusSMS(phone, newStatus, orderId).catch(e => logger.error('SMS Error', e));
+    }
+    
+    // Send rejection SMS if needed
+    if (newStatus === 'CANCELLED' && rejectionReason) {
+       // Implement specific rejection SMS if required
+       logger.info('Order rejected', { orderId, reason: rejectionReason });
     }
 
     revalidatePath('/admin');

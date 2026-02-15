@@ -30,11 +30,11 @@ export interface Review {
 }
 
 export enum OrderStatus {
-  PENDING = 'Pending',
-  CONFIRMED = 'Confirmed',
-  SHIPPED = 'Shipped',
-  DELIVERED = 'Delivered',
-  CANCELLED = 'Cancelled',
+  PENDING = 'PENDING',
+  CONFIRMED = 'CONFIRMED',
+  SHIPPED = 'SHIPPED',
+  DELIVERED = 'DELIVERED',
+  CANCELLED = 'CANCELLED',
 }
 
 export interface Order {
@@ -66,21 +66,3 @@ export interface SiteConfig {
   contactEmail: string;
   officeAddress: string;
 }
-
-export const PROVINCES = [
-  "Koshi Province",
-  "Madhesh Province",
-  "Bagmati Province",
-  "Gandaki Province",
-  "Lumbini Province",
-  "Karnali Province",
-  "Sudurpashchim Province"
-];
-
-export const CATEGORIES = [
-  "Shampoo",
-  "Treatment",
-  "Serum",
-  "Kits",
-  "Accessories"
-];

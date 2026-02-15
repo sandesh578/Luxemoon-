@@ -50,7 +50,14 @@ export const Providers = ({ children }: { children?: React.ReactNode }) => {
   useEffect(() => {
     setMounted(true);
     const saved = localStorage.getItem('lm_cart');
-    if (saved) setItems(JSON.parse(saved));
+    if (saved) {
+      try {
+        setItems(JSON.parse(saved));
+      } catch (e) {
+        console.error("Failed to parse cart data", e);
+        localStorage.removeItem('lm_cart');
+      }
+    }
   }, []);
 
   useEffect(() => {

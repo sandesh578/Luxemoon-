@@ -2,8 +2,21 @@
 
 import { useState } from 'react';
 import { updateOrderStatus } from './actions';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+
+// Define minimal interfaces needed for the table display
+// This avoids importing heavy Prisma types into client components
+interface AdminProduct {
+  name: string;
+}
+
+interface AdminOrderItem {
+  id: string;
+  quantity: number;
+  price: number;
+  product: AdminProduct;
+}
 
 interface Order {
   id: string;
@@ -12,8 +25,9 @@ interface Order {
   total: number;
   status: string;
   isInsideValley: boolean;
-  items: any[];
+  items: AdminOrderItem[];
   updatedAt: Date;
+  rejectionReason?: string | null;
 }
 
 export const AdminOrderTable = ({ orders }: { orders: Order[] }) => {
@@ -21,13 +35,21 @@ export const AdminOrderTable = ({ orders }: { orders: Order[] }) => {
   const router = useRouter();
 
   const handleStatusChange = async (orderId: string, newStatus: string, phone: string, updatedAt: Date) => {
+    let reason = undefined;
+    
+    if (newStatus === 'CANCELLED') {
+      const input = window.prompt("Enter rejection/cancellation reason:");
+      if (input === null) return; // Cancel clicked
+      reason = input || "No reason provided";
+    }
+
     setLoadingId(orderId);
-    const result = await updateOrderStatus(orderId, newStatus, phone, updatedAt);
+    const result = await updateOrderStatus(orderId, newStatus, phone, updatedAt, reason);
     setLoadingId(null);
     
     if (!result.success) {
       alert(result.error);
-      router.refresh(); // Refresh data on error/collision
+      router.refresh(); 
     }
   };
 
@@ -64,7 +86,7 @@ export const AdminOrderTable = ({ orders }: { orders: Order[] }) => {
               </td>
               <td className="p-4">
                 <div className="space-y-1">
-                  {order.items.map((i: any) => (
+                  {order.items.map((i) => (
                     <div key={i.id} className="text-xs text-stone-600">
                       <span className="font-bold">{i.quantity}x</span> {i.product.name}
                     </div>
@@ -73,20 +95,28 @@ export const AdminOrderTable = ({ orders }: { orders: Order[] }) => {
               </td>
               <td className="p-4 font-bold text-stone-900">NPR {order.total.toLocaleString()}</td>
               <td className="p-4">
-                <div className="flex items-center gap-2">
-                  <select 
-                    className={`text-xs font-bold rounded-full px-3 py-1 border-none focus:ring-2 focus:ring-amber-500 cursor-pointer appearance-none ${statusColors[order.status] || 'bg-gray-100'}`}
-                    value={order.status}
-                    disabled={loadingId === order.id}
-                    onChange={(e) => handleStatusChange(order.id, e.target.value, order.phone, order.updatedAt)}
-                  >
-                    <option value="PENDING">PENDING</option>
-                    <option value="CONFIRMED">CONFIRMED</option>
-                    <option value="SHIPPED">SHIPPED</option>
-                    <option value="DELIVERED">DELIVERED</option>
-                    <option value="CANCELLED">CANCELLED</option>
-                  </select>
-                  {loadingId === order.id && <Loader2 className="w-4 h-4 animate-spin text-stone-400" />}
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <select 
+                      className={`text-xs font-bold rounded-full px-3 py-1 border-none focus:ring-2 focus:ring-amber-500 cursor-pointer appearance-none ${statusColors[order.status] || 'bg-gray-100'}`}
+                      value={order.status}
+                      disabled={loadingId === order.id}
+                      onChange={(e) => handleStatusChange(order.id, e.target.value, order.phone, order.updatedAt)}
+                    >
+                      <option value="PENDING">PENDING</option>
+                      <option value="CONFIRMED">CONFIRMED</option>
+                      <option value="SHIPPED">SHIPPED</option>
+                      <option value="DELIVERED">DELIVERED</option>
+                      <option value="CANCELLED">CANCELLED</option>
+                    </select>
+                    {loadingId === order.id && <Loader2 className="w-4 h-4 animate-spin text-stone-400" />}
+                  </div>
+                  {order.status === 'CANCELLED' && order.rejectionReason && (
+                    <div className="flex items-start gap-1 text-xs text-red-600 bg-red-50 p-1.5 rounded-lg max-w-[200px]">
+                      <AlertCircle className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                      <span>{order.rejectionReason}</span>
+                    </div>
+                  )}
                 </div>
               </td>
             </tr>

@@ -4,11 +4,14 @@ import { cookies, headers } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 
+export const runtime = 'nodejs';
+
 export async function POST(req: Request) {
   try {
     const { email, password } = await req.json();
     const headersList = await headers();
-    const ip = headersList.get('x-forwarded-for') || 'unknown';
+    const forwardedFor = headersList.get('x-forwarded-for');
+    const ip = forwardedFor ? forwardedFor.split(',')[0] : 'unknown';
 
     // 1. Rate Limiting
     const recentAttempts = await prisma.loginAttempt.count({
@@ -23,7 +26,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Too many login attempts.' }, { status: 429 });
     }
 
-    const isValid = email === 'admin@luxemoon.com' && password === 'admin';
+    // Use Environment Variables for credentials, fallback to defaults only for setup
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@luxemoon.com';
+    const adminPass = process.env.ADMIN_PASSWORD || 'admin';
+
+    const isValid = email === adminEmail && password === adminPass;
 
     // Log attempt
     await prisma.loginAttempt.create({
