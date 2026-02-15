@@ -1,1 +1,0 @@
-// This file is deleted. Use prisma/client and API routes.
