@@ -1,14 +1,15 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { useCart, useLocationContext } from '@/components/Providers';
+import { useCart, useLocationContext, useConfig } from '@/components/Providers';
 import { useRouter } from 'next/navigation';
 import { ShoppingBag, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { PROVINCES } from '@/lib/constants';
 
 export default function CheckoutPage() {
-  const { items, cartTotal, clearCart } = useCart();
+  const { items, cartTotal, deliveryCharge, finalTotal, clearCart } = useCart();
   const { isInsideValley, setInsideValley } = useLocationContext();
+  const config = useConfig();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [idempotencyKey, setIdempotencyKey] = useState('');
@@ -24,7 +25,6 @@ export default function CheckoutPage() {
   });
 
   useEffect(() => {
-    // Generate unique key on mount to prevent duplicate submissions of same session
     setIdempotencyKey(Math.random().toString(36).substring(2) + Date.now().toString(36));
   }, []);
 
@@ -54,7 +54,8 @@ export default function CheckoutPage() {
             quantity: i.quantity,
             price: isInsideValley ? i.priceInside : i.priceOutside
           })),
-          total: cartTotal
+          // Total calculated on server, but sending for validation/logs if needed
+          total: finalTotal 
         }),
       });
 
@@ -135,6 +136,21 @@ export default function CheckoutPage() {
                  required
                  disabled={loading}
                />
+               <input 
+                 className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:border-amber-500 outline-none"
+                 placeholder="Landmark (Optional)"
+                 value={formData.landmark}
+                 onChange={e => setFormData({...formData, landmark: e.target.value})}
+                 disabled={loading}
+               />
+               <textarea 
+                 className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:border-amber-500 outline-none"
+                 placeholder="Delivery Notes (Optional)"
+                 value={formData.notes}
+                 onChange={e => setFormData({...formData, notes: e.target.value})}
+                 disabled={loading}
+                 rows={3}
+               />
             </div>
           </div>
         </div>
@@ -154,9 +170,19 @@ export default function CheckoutPage() {
                   </div>
                 ))}
               </div>
-              <div className="border-t border-stone-100 pt-4 flex justify-between text-xl font-bold">
-                <span>Total</span>
-                <span className="text-amber-700">NPR {cartTotal.toLocaleString()}</span>
+              <div className="border-t border-stone-100 pt-4 space-y-2">
+                <div className="flex justify-between text-sm text-stone-600">
+                  <span>Subtotal</span>
+                  <span>NPR {cartTotal.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-sm text-stone-600">
+                  <span>Delivery ({isInsideValley ? 'Inside Valley' : 'Outside Valley'})</span>
+                  <span>{deliveryCharge === 0 ? <span className="text-green-600 font-bold">FREE</span> : `NPR ${deliveryCharge}`}</span>
+                </div>
+                <div className="flex justify-between text-xl font-bold pt-2 text-stone-900">
+                  <span>Total</span>
+                  <span className="text-amber-700">NPR {finalTotal.toLocaleString()}</span>
+                </div>
               </div>
               <button 
                 type="submit"

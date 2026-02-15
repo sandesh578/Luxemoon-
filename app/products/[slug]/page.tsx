@@ -1,8 +1,9 @@
 import { prisma } from '@/lib/prisma';
 import { notFound } from 'next/navigation';
 import { ProductActions } from './ProductActions';
-import { Star, Check, Truck } from 'lucide-react';
+import { Star, Check, Truck, PlayCircle } from 'lucide-react';
 import type { Metadata } from 'next';
+import { getSiteConfig } from '@/lib/settings';
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -49,6 +50,7 @@ export default async function ProductPage({ params }: Props) {
   });
 
   if (!product) notFound();
+  const config = await getSiteConfig();
 
   // JSON-LD structured data
   const jsonLd = {
@@ -74,8 +76,18 @@ export default async function ProductPage({ params }: Props) {
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
         <div className="space-y-4">
-          <div className="aspect-[4/5] rounded-3xl overflow-hidden bg-stone-100 shadow-inner">
+          <div className="aspect-[4/5] rounded-3xl overflow-hidden bg-stone-100 shadow-inner relative group">
             <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
+            {product.videoUrl && (
+              <a 
+                href={product.videoUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="absolute bottom-4 right-4 bg-white/90 p-3 rounded-full shadow-lg hover:scale-110 transition-transform text-amber-600"
+              >
+                <PlayCircle className="w-8 h-8" />
+              </a>
+            )}
           </div>
         </div>
 
@@ -115,7 +127,7 @@ export default async function ProductPage({ params }: Props) {
              <Truck className="w-5 h-5 text-amber-700 flex-shrink-0 mt-0.5" />
              <div className="text-sm text-stone-700">
                <span className="font-bold block text-stone-900 mb-1">Cash on Delivery Available</span>
-               Free shipping on orders over NPR 5,000 inside Kathmandu Valley.
+               Free shipping on orders over NPR {config.freeDeliveryThreshold.toLocaleString()} inside Kathmandu Valley.
              </div>
           </div>
         </div>

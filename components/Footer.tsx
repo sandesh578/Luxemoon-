@@ -1,12 +1,16 @@
+'use client';
 import { Phone, Mail, MapPin, Instagram, Facebook } from 'lucide-react';
 import Link from 'next/link';
+import { useConfig } from './Providers';
 
 export const Footer = () => {
+  const config = useConfig();
+
   return (
     <footer className="bg-stone-900 text-stone-300 py-16 px-4">
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
         <div className="space-y-4">
-          <h3 className="font-serif text-2xl text-white">LUXE MOON</h3>
+          <h3 className="font-serif text-2xl text-white">{config.storeName}</h3>
           <p className="text-sm font-light leading-relaxed text-stone-400 max-w-xs">
             Premium Korean-origin haircare. Formulated with Biotin & Keratin to restore your hair's natural brilliance.
           </p>
@@ -37,21 +41,21 @@ export const Footer = () => {
           <ul className="space-y-4 text-sm">
             <li className="flex items-center gap-3">
               <Phone className="w-4 h-4 text-amber-600" />
-              <span>+977 9800000000</span>
+              <span>{config.contactPhone}</span>
             </li>
             <li className="flex items-center gap-3">
               <Mail className="w-4 h-4 text-amber-600" />
-              <span>hello@luxemoon.com.np</span>
+              <span>{config.contactEmail}</span>
             </li>
             <li className="flex items-center gap-3">
               <MapPin className="w-4 h-4 text-amber-600" />
-              <span>Durbarmarg, Kathmandu</span>
+              <span>{config.contactAddress}</span>
             </li>
           </ul>
         </div>
       </div>
       <div className="max-w-7xl mx-auto mt-16 pt-8 border-t border-stone-800 text-center text-xs text-stone-500">
-        &copy; {new Date().getFullYear()} Luxe Moon Nepal. All rights reserved.
+        &copy; {new Date().getFullYear()} {config.storeName} Nepal. All rights reserved.
       </div>
     </footer>
   );

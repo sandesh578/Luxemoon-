@@ -1,4 +1,5 @@
 {
   "name": "Luxe Moon Haircare",
-  "description": "Premium Korean-origin haircare eCommerce platform focused on the Nepali market with guest checkout and COD."
+  "description": "Premium Korean-origin haircare eCommerce platform focused on the Nepali market with guest checkout and COD.",
+  "requestFramePermissions": []
 }

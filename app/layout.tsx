@@ -5,6 +5,7 @@ import "./globals.css";
 import { Providers } from "@/components/Providers";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { getSiteConfig } from "@/lib/settings";
 
 const playfair = Playfair_Display({ 
   subsets: ["latin"],
@@ -23,15 +24,19 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://luxemoon.com.np'),
 };
 
-export default function RootLayout({
+export const dynamic = 'force-dynamic';
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const config = await getSiteConfig();
+
   return (
     <html lang="en">
       <body className={`${playfair.variable} ${lato.variable} font-sans bg-[#F6EFE7] text-[#5C3A21]`}>
-        <Providers>
+        <Providers config={config}>
           <Navbar />
           <main className="min-h-screen">
             {children}

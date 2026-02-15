@@ -21,6 +21,17 @@ export interface CartItem extends Product {
   quantity: number;
 }
 
+export interface SiteConfig {
+  storeName: string;
+  bannerText: string;
+  deliveryChargeInside: number;
+  deliveryChargeOutside: number;
+  freeDeliveryThreshold: number;
+  contactPhone: string;
+  contactEmail: string;
+  contactAddress: string;
+}
+
 interface LocationContextType {
   isInsideValley: boolean;
   toggleLocation: () => void;
@@ -34,14 +45,21 @@ interface CartContextType {
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
   cartTotal: number;
+  deliveryCharge: number;
+  finalTotal: number;
   isCartOpen: boolean;
   setIsCartOpen: (isOpen: boolean) => void;
 }
 
+interface ConfigContextType {
+  config: SiteConfig;
+}
+
 const LocationContext = createContext<LocationContextType | null>(null);
 const CartContext = createContext<CartContextType | null>(null);
+const ConfigContext = createContext<ConfigContextType | null>(null);
 
-export const Providers = ({ children }: { children?: React.ReactNode }) => {
+export const Providers = ({ children, config }: { children?: React.ReactNode, config: SiteConfig }) => {
   const [isInsideValley, setInsideValleyState] = useState(true);
   const [items, setItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -92,14 +110,22 @@ export const Providers = ({ children }: { children?: React.ReactNode }) => {
     return sum + (price * item.quantity);
   }, 0);
 
+  const deliveryCharge = cartTotal >= config.freeDeliveryThreshold 
+    ? 0 
+    : (isInsideValley ? config.deliveryChargeInside : config.deliveryChargeOutside);
+
+  const finalTotal = cartTotal + deliveryCharge;
+
   if (!mounted) return null;
 
   return (
-    <LocationContext.Provider value={{ isInsideValley, toggleLocation, setInsideValley }}>
-      <CartContext.Provider value={{ items, addToCart, removeFromCart, updateQuantity, clearCart, cartTotal, isCartOpen, setIsCartOpen }}>
-        {children}
-      </CartContext.Provider>
-    </LocationContext.Provider>
+    <ConfigContext.Provider value={{ config }}>
+      <LocationContext.Provider value={{ isInsideValley, toggleLocation, setInsideValley }}>
+        <CartContext.Provider value={{ items, addToCart, removeFromCart, updateQuantity, clearCart, cartTotal, deliveryCharge, finalTotal, isCartOpen, setIsCartOpen }}>
+          {children}
+        </CartContext.Provider>
+      </LocationContext.Provider>
+    </ConfigContext.Provider>
   );
 };
 
@@ -113,4 +139,10 @@ export const useCart = () => {
   const ctx = useContext(CartContext);
   if (!ctx) throw new Error("useCart missing");
   return ctx;
+};
+
+export const useConfig = () => {
+  const ctx = useContext(ConfigContext);
+  if (!ctx) throw new Error("useConfig missing");
+  return ctx.config;
 };

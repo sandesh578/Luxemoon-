@@ -1,20 +1,21 @@
 'use client';
 import Link from 'next/link';
 import { Menu, ShoppingBag, MapPin } from 'lucide-react';
-import { useCart, useLocationContext } from './Providers';
+import { useCart, useLocationContext, useConfig } from './Providers';
 import { CartDrawer } from './CartDrawer';
 import { useState } from 'react';
 
 export const Navbar = () => {
   const { items, setIsCartOpen } = useCart();
   const { isInsideValley, toggleLocation } = useLocationContext();
+  const config = useConfig();
   const [mobileOpen, setMobileOpen] = useState(false);
   const itemCount = items.reduce((acc, item) => acc + item.quantity, 0);
 
   return (
     <>
       <div className="bg-stone-900 text-amber-50 text-[10px] md:text-xs font-bold tracking-widest text-center py-2 px-4 uppercase">
-        ✨ Rooted in Korea. Created for the World. | Cash on Delivery Available ✨
+        ✨ {config.bannerText} ✨
       </div>
       <nav className="sticky top-0 z-40 bg-[#F6EFE7]/90 backdrop-blur-xl border-b border-amber-900/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -25,7 +26,7 @@ export const Navbar = () => {
                 <Menu className="w-6 h-6" />
               </button>
               <Link href="/" className="flex flex-col">
-                <h1 className="font-serif text-2xl font-bold text-stone-900 tracking-tighter">LUXE MOON</h1>
+                <h1 className="font-serif text-2xl font-bold text-stone-900 tracking-tighter uppercase">{config.storeName}</h1>
                 <span className="text-[9px] tracking-[0.25em] uppercase text-amber-700 font-bold">Rooted in Korea</span>
               </Link>
             </div>
