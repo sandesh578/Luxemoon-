@@ -1,3 +1,16 @@
+# Dependencies
+node_modules
+
+# Next.js
+.next
+out
+
+# Environment
+.env
+.env.local
+.env.production.local
+.env.development.local
+
 # Logs
 logs
 *.log
@@ -7,7 +20,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
+# Build
 dist
 dist-ssr
 *.local
@@ -22,3 +35,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Prisma
+prisma/migrations/**/migration_lock.toml
+
+# Vercel
+.vercel

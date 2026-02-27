@@ -1,137 +1,138 @@
 import { prisma } from '@/lib/prisma';
+import Link from 'next/link';
+import { OptimizedImage as Image } from '@/components/OptimizedImage';
 import { notFound } from 'next/navigation';
-import { ProductActions } from './ProductActions';
-import { Star, Check, Truck, PlayCircle } from 'lucide-react';
 import type { Metadata } from 'next';
-import { getSiteConfig } from '@/lib/settings';
+import { cache } from 'react';
+import ProductPageClient from './ProductPageClient';
 
-interface Props {
-  params: Promise<{ slug: string }>;
-}
+export const revalidate = 60;
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const slug = (await params).slug;
-  const product = await prisma.product.findUnique({ where: { slug } });
+const getProduct = cache(async (slug: string) => {
+  return prisma.product.findUnique({
+    where: { slug },
+    include: {
+      category: { select: { name: true } },
+      reviews: {
+        where: { approved: true, isHidden: false },
+        orderBy: { createdAt: 'desc' as const },
+        select: {
+          id: true,
+          userName: true,
+          address: true,
+          rating: true,
+          comment: true,
+          verifiedPurchase: true,
+          images: true,
+          video: true,
+          isFeatured: true,
+          isVerified: true,
+          createdAt: true,
+        },
+      },
+      transformations: {
+        orderBy: { createdAt: 'desc' as const },
+      }
+    },
+  });
+});
 
-  if (!product) return { title: 'Product Not Found' };
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const product = await getProduct(slug);
+  if (!product) return {};
+
+  const title = product.seoTitle || `${product.name} | Luxe Moon`;
+  const description = product.seoDescription || product.description.slice(0, 160);
+  const image = product.images[0] || '';
 
   return {
-    title: product.name,
-    description: product.description,
+    title,
+    description,
     openGraph: {
-      title: product.name,
-      description: product.description,
-      images: [product.images[0]],
+      title,
+      description,
+      images: [image],
       type: 'website',
     },
     twitter: {
       card: 'summary_large_image',
-      title: product.name,
-      description: product.description,
-      images: [product.images[0]],
-    },
+      title,
+      description,
+      images: [image],
+    }
   };
 }
 
-export async function generateStaticParams() {
-  const products = await prisma.product.findMany();
-  return products.map((product) => ({
-    slug: product.slug,
-  }));
-}
-
-export const revalidate = 60;
-
-export default async function ProductPage({ params }: Props) {
-  const slug = (await params).slug;
-  const product = await prisma.product.findUnique({ 
-    where: { slug },
-    include: { reviews: true }
-  });
+export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const product = await getProduct(slug);
 
   if (!product) notFound();
-  const config = await getSiteConfig();
 
-  // JSON-LD structured data
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'Product',
-    name: product.name,
-    image: product.images[0],
-    description: product.description,
-    offers: {
-      '@type': 'Offer',
-      price: product.priceInside,
-      priceCurrency: 'NPR',
-      availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
-    },
-  };
+  // Phase 5: Graceful No Longer Available view
+  if (!product.isActive || product.isArchived || product.isDraft) {
+    const suggestedProducts = await prisma.product.findMany({
+      where: { isActive: true, isArchived: false, isDraft: false },
+      select: { id: true, slug: true, name: true, priceInside: true, originalPrice: true, images: true },
+      take: 4,
+      orderBy: { orderItems: { _count: 'desc' } }
+    });
 
-  return (
-    <div className="pt-8 pb-24 px-4 max-w-7xl mx-auto">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
-        <div className="space-y-4">
-          <div className="aspect-[4/5] rounded-3xl overflow-hidden bg-stone-100 shadow-inner relative group">
-            <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
-            {product.videoUrl && (
-              <a 
-                href={product.videoUrl} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="absolute bottom-4 right-4 bg-white/90 p-3 rounded-full shadow-lg hover:scale-110 transition-transform text-amber-600"
-              >
-                <PlayCircle className="w-8 h-8" />
-              </a>
-            )}
-          </div>
-        </div>
+    return (
+      <div className="min-h-[80vh] bg-[#FDFCFB] flex flex-col items-center justify-center py-24 px-4 text-center">
+        <h1 className="text-4xl font-serif font-bold text-stone-900 mb-4">Product No Longer Available</h1>
+        <p className="text-stone-500 max-w-lg mb-12">The product you are looking for is currently unavailable or has been archived. Check out our featured products below.</p>
 
-        <div className="flex flex-col justify-center">
-          <span className="text-amber-600 font-bold tracking-widest text-xs uppercase mb-4">{product.category}</span>
-          <h1 className="font-serif text-4xl md:text-5xl text-stone-900 mb-6 leading-tight">{product.name}</h1>
-          
-          <div className="flex items-center gap-4 mb-8">
-            <div className="font-sans font-bold text-stone-800 text-2xl">
-              NPR {product.priceInside.toLocaleString()}
-            </div>
-            <div className="h-6 w-px bg-stone-300" />
-            <div className="flex items-center gap-1">
-              <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-              <span className="font-bold text-stone-800">5.0</span>
-            </div>
-          </div>
-
-          <p className="text-stone-600 leading-relaxed mb-8 text-lg font-light">
-            {product.description}
-          </p>
-
-          <div className="space-y-4 mb-10">
-            {product.features.map((feat, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <div className="w-5 h-5 rounded-full bg-amber-100 flex items-center justify-center text-amber-700">
-                  <Check className="w-3 h-3" />
-                </div>
-                <span className="text-stone-700">{feat}</span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto w-full text-left">
+          {suggestedProducts.map(p => (
+            <Link key={p.id} href={`/products/${p.slug}`} className="group cursor-pointer block">
+              <div className="relative aspect-[3/4] overflow-hidden rounded-3xl bg-stone-100 mb-4">
+                {p.images[0] && (
+                  <Image src={p.images[0]} fill className="object-cover group-hover:scale-105 transition-transform duration-500" alt={p.name} />
+                )}
               </div>
-            ))}
-          </div>
-
-          <ProductActions product={product} />
-          
-          <div className="bg-amber-50 rounded-xl p-4 flex items-start gap-3 border border-amber-100 mt-8">
-             <Truck className="w-5 h-5 text-amber-700 flex-shrink-0 mt-0.5" />
-             <div className="text-sm text-stone-700">
-               <span className="font-bold block text-stone-900 mb-1">Cash on Delivery Available</span>
-               Free shipping on orders over NPR {config.freeDeliveryThreshold.toLocaleString()} inside Kathmandu Valley.
-             </div>
-          </div>
+              <h3 className="font-serif text-lg text-stone-900 group-hover:text-amber-700 transition-colors">{p.name}</h3>
+              <div className="flex items-center gap-3">
+                <span className="font-bold text-stone-900">NPR {p.priceInside.toLocaleString()}</span>
+              </div>
+            </Link>
+          ))}
         </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  const { createdAt, updatedAt, categoryId, category: catRel, transformations, ...rest } = product;
+
+  const relatedProducts = await prisma.product.findMany({
+    where: { categoryId: categoryId, isActive: true, isArchived: false, isDraft: false, NOT: { id: product.id } },
+    select: {
+      id: true,
+      slug: true,
+      name: true,
+      priceInside: true,
+      originalPrice: true,
+      images: true,
+    },
+    take: 2,
+    orderBy: { stock: 'desc' }
+  });
+
+  return <ProductPageClient
+    product={{
+      ...rest,
+      category: catRel?.name || 'Uncategorized',
+      faqs: (rest.faqs as any[] || []) as any,
+      relatedProducts,
+      transformations: transformations.map(t => ({
+        ...t,
+        createdAt: t.createdAt.toISOString()
+      })),
+      reviews: product.reviews.map(r => ({
+        ...r,
+        createdAt: r.createdAt.toISOString(),
+      })),
+    }}
+  />;
 }

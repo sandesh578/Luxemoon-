@@ -2,6 +2,13 @@ import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
+const CATEGORIES = [
+  { name: 'Shampoo', slug: 'shampoo', description: 'Deep cleansing and nourishing formulas.' },
+  { name: 'Treatment', slug: 'treatment', description: 'Advanced repair for damaged hair.' },
+  { name: 'Serum', slug: 'serum', description: 'Lightweight protection and shine.' },
+  { name: 'Kits', slug: 'kits', description: 'Complete hair transformation sets.' },
+];
+
 const INITIAL_PRODUCTS = [
   {
     slug: 'nano-botox-shampoo',
@@ -10,10 +17,11 @@ const INITIAL_PRODUCTS = [
     priceInside: 1800,
     priceOutside: 1950,
     originalPrice: 2200,
-    category: 'Shampoo',
+    categorySlug: 'shampoo',
     images: ['https://images.unsplash.com/photo-1631729371254-42c2892f0e6e?q=80&w=800&auto=format&fit=crop'],
     features: ['Sulfate Free', 'Paraben Free', 'pH Balanced 5.5'],
     stock: 50,
+    benefits: ['Strengthens roots', 'Adds shine', 'Restores elasticity'],
   },
   {
     slug: 'shining-silk-hair-mask',
@@ -21,51 +29,60 @@ const INITIAL_PRODUCTS = [
     description: 'Deep conditioning treatment that works in minutes. The 4-in-1 formula hydrates, repairs, smoothes, and protects against environmental damage.',
     priceInside: 2500,
     priceOutside: 2650,
-    category: 'Treatment',
-    images: ['https://images.unsplash.com/photo-1556228720-1987594a8163?q=80&w=800&auto=format&fit=crop'],
+    categorySlug: 'treatment',
+    images: ['https://images.unsplash.com/photo-1556228578-0d85b1a4d571?q=80&w=800&auto=format&fit=crop'],
     features: ['Deep Hydration', 'Anti-Frizz', 'Korean Silk Protein'],
     stock: 30,
+    benefits: ['Hydrates', 'Repairs damage', 'Protects'],
   },
-  {
-    slug: 'soft-silky-serum',
-    name: 'Soft and Silky Hair Serum',
-    description: 'Lightweight, non-greasy serum that seals split ends and provides thermal protection. Perfect for daily styling in Nepal\'s humid climate.',
-    priceInside: 1500,
-    priceOutside: 1600,
-    originalPrice: 1800,
-    category: 'Serum',
-    images: ['https://images.unsplash.com/photo-1620916566398-39f1143ab7be?q=80&w=800&auto=format&fit=crop'],
-    features: ['Heat Protection', 'Instant Shine', 'Non-Sticky'],
-    stock: 100,
-  },
-  {
-    slug: 'complete-nanoplastia-kit',
-    name: 'Complete Nanoplastia Kit',
-    description: 'The ultimate salon-level experience at home. Includes Shampoo, Mask, and Serum for a complete hair transformation. Best value.',
-    priceInside: 5200,
-    priceOutside: 5500,
-    originalPrice: 5800,
-    category: 'Kits',
-    images: ['https://images.unsplash.com/photo-1629198688000-71f23e745b6e?q=80&w=800&auto=format&fit=crop'],
-    features: ['Complete Care', 'Value Pack', 'Premium Gift Box'],
-    stock: 15,
-  }
 ];
 
 async function main() {
   console.log('Start seeding ...');
-  
-  // Clear existing products to prevent duplicates on re-seed
+
+  // Clear existing
   await prisma.review.deleteMany();
   await prisma.orderItem.deleteMany();
   await prisma.product.deleteMany();
+  await prisma.category.deleteMany();
+  await prisma.homepageContent.deleteMany();
+  await prisma.notificationLog.deleteMany();
 
-  for (const p of INITIAL_PRODUCTS) {
-    const product = await prisma.product.create({
-      data: p,
-    });
-    console.log(`Created product with id: ${product.id}`);
+  // 1. Categories
+  const createdCategories: any = {};
+  for (const c of CATEGORIES) {
+    const cat = await prisma.category.create({ data: c });
+    createdCategories[c.slug] = cat.id;
   }
+
+  // 2. Products
+  for (const p of INITIAL_PRODUCTS) {
+    const { categorySlug, ...rest } = p;
+    await prisma.product.create({
+      data: {
+        ...rest,
+        categoryId: createdCategories[categorySlug],
+      },
+    });
+  }
+
+  // 3. Homepage Content
+  await prisma.homepageContent.create({
+    data: {
+      heroSlides: [
+        {
+          image: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=1200&auto=format&fit=crop',
+          title: 'Premium Korean Haircare',
+          subtitle: 'Rooted in Korea. Created for the World.',
+          ctaText: 'Shop Now',
+          ctaLink: '/shop',
+        }
+      ],
+      noticeBarText: 'Free Delivery on orders above NPR 5000!',
+      noticeBarEnabled: true,
+    }
+  });
+
   console.log('Seeding finished.');
 }
 

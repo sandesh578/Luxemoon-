@@ -1,36 +1,35 @@
-import type { Metadata } from 'next';
+import { getSiteConfig } from '@/lib/settings';
+import DOMPurify from 'isomorphic-dompurify';
 
-export const metadata: Metadata = {
-  title: 'Our Story | Luxe Moon',
-  description: 'Luxe Moon - Bringing Korean haircare innovation to Nepal. Formulated with premium botanicals like Argan Oil, Biotin, and Silk Proteins.',
-};
+export const revalidate = 60;
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const config = await getSiteConfig();
+
   return (
-    <div className="max-w-4xl mx-auto px-4 py-20 text-center">
-      <h1 className="font-serif text-5xl font-bold mb-8 text-stone-900">Our Story</h1>
-      <p className="text-xl text-stone-600 leading-relaxed mb-12">
-        Luxe Moon was born from a desire to bring the sophisticated technology of Korean haircare to the unique climate and needs of Nepal. 
-        Our formulas are crafted in Seoul using premium botanicals like Argan Oil, Biotin, and Silk Proteins.
-      </p>
-      
-      <div className="grid md:grid-cols-3 gap-8 mt-16 text-left">
-        <div className="p-6 bg-white rounded-2xl shadow-sm border border-stone-100">
-           <div className="text-4xl mb-4">🇰🇷</div>
-           <h3 className="font-serif text-xl font-bold mb-2">Korean Roots</h3>
-           <p className="text-stone-500">Formulated in top Seoul laboratories using cutting-edge Nanoplastia technology.</p>
+    <div className="max-w-4xl mx-auto px-4 py-16 min-h-screen">
+      <h1 className="font-serif text-4xl font-bold text-stone-900 mb-8">Our Story</h1>
+      {config.aboutContent ? (
+        <div
+          className="prose-sm sm:prose-base max-w-none text-stone-600 prose-headings:font-serif prose-headings:text-stone-900 prose-a:text-amber-600"
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(config.aboutContent) }}
+        />
+      ) : (
+        <div className="space-y-8 text-stone-600 leading-relaxed">
+          <p className="text-lg">
+            <strong className="text-stone-900">Luxe Moon</strong> was born from a simple belief: everyone deserves access to world-class haircare, no matter where they are.
+          </p>
+          <p>
+            We source the finest Korean haircare formulations — enriched with Biotin, Keratin, and natural botanicals — and bring them directly to Nepal.
+          </p>
+          <p>
+            Our products are carefully selected for their proven efficacy, premium ingredients, and salon-grade results that you can achieve at home.
+          </p>
+          <div className="bg-amber-50 border border-amber-100 rounded-xl p-8 text-center">
+            <p className="font-serif text-2xl text-stone-900">&quot;Rooted in Korea. Created for the World.&quot;</p>
+          </div>
         </div>
-        <div className="p-6 bg-white rounded-2xl shadow-sm border border-stone-100">
-           <div className="text-4xl mb-4">🇳🇵</div>
-           <h3 className="font-serif text-xl font-bold mb-2">Nepali Soul</h3>
-           <p className="text-stone-500">Designed specifically for the humidity, dust, and water conditions found in Nepal.</p>
-        </div>
-        <div className="p-6 bg-white rounded-2xl shadow-sm border border-stone-100">
-           <div className="text-4xl mb-4">✨</div>
-           <h3 className="font-serif text-xl font-bold mb-2">Glass Hair</h3>
-           <p className="text-stone-500">Our signature finish. Achieve that mirror-like shine without heavy silicones.</p>
-        </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -1,28 +1,8 @@
-import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { encrypt, decrypt } from "./auth-edge";
 
-const secretKey = process.env.JWT_SECRET || "default-secret-change-me-in-prod";
-
-if (process.env.NODE_ENV === 'production' && secretKey === "default-secret-change-me-in-prod") {
-  console.warn("WARNING: Using default JWT_SECRET in production. This is insecure.");
-}
-
-const key = new TextEncoder().encode(secretKey);
-
-export async function encrypt(payload: any) {
-  return await new SignJWT(payload)
-    .setProtectedHeader({ alg: "HS256" })
-    .setIssuedAt()
-    .setExpirationTime("24h")
-    .sign(key);
-}
-
-export async function decrypt(input: string): Promise<any> {
-  const { payload } = await jwtVerify(input, key, {
-    algorithms: ["HS256"],
-  });
-  return payload;
-}
+// Re-export encrypt and decrypt for server-side usage
+export { encrypt, decrypt };
 
 export async function getSession() {
   const session = (await cookies()).get("session")?.value;
@@ -31,5 +11,16 @@ export async function getSession() {
     return await decrypt(session);
   } catch (error) {
     return null;
+  }
+}
+
+/**
+ * Verify that the current request is from an authenticated admin.
+ * Throws an error if not authenticated.
+ */
+export async function verifyAdmin() {
+  const session = await getSession();
+  if (!session) {
+    throw new Error("Unauthorized");
   }
 }

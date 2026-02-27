@@ -1,1 +1,365 @@
-��ޭ�h��bz{
+// Luxe Moon - Premium Brand Schema
+// Korean Haircare eCommerce for Nepal
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── ENUMS ────────────────────────────────────────
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+// ─── MODELS ───────────────────────────────────────
+
+model Category {
+  id          String  @id @default(cuid())
+  name        String
+  slug        String  @unique
+  image       String?
+  description String?
+
+  // Visibility & Soft Delete
+  isActive   Boolean   @default(true)
+  isArchived Boolean   @default(false)
+  deletedAt  DateTime?
+
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([isActive])
+  @@index([isArchived])
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  name          String
+  description   String
+  priceInside   Int
+  priceOutside  Int
+  originalPrice Int?
+  images        String[]
+  features      String[]
+  videoUrl      String?
+  stock         Int      @default(0)
+
+  // Category
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id])
+
+  // Enterprise & Marketing fields
+  sku             String?   @unique
+  weight          String?
+  dimensions      String?
+  discountPercent Int       @default(0)
+  discountFixed   Int?
+  discountStart   DateTime?
+  discountEnd     DateTime?
+  isFeatured      Boolean   @default(false)
+  isNew           Boolean   @default(false)
+  seoTitle        String?
+  seoDescription  String?
+  tags            String[]
+  isBundle        Boolean   @default(false)
+  bundleItemIds   String[]
+  isDeleted       Boolean   @default(false)
+
+  // Visibility & Soft Delete
+  isActive   Boolean   @default(true)
+  isArchived Boolean   @default(false)
+  isDraft    Boolean   @default(false)
+  deletedAt  DateTime?
+
+  // Marketing Content
+  marketingDescription String?  @db.Text
+  ingredients          String?  @db.Text
+  howToUse             String?  @db.Text
+  benefits             String[]
+  comparisonImages     String[]
+  faqs                 Json?    @default("[]")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reviews         Review[]
+  transformations Transformation[]
+  orderItems      OrderItem[]
+
+  @@index([categoryId])
+  @@index([isFeatured])
+  @@index([isNew])
+  @@index([isDeleted])
+  @@index([isActive])
+  @@index([isArchived])
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  customerName    String
+  phone           String
+  email           String?
+  province        String
+  district        String
+  address         String
+  landmark        String?
+  notes           String?
+  isInsideValley  Boolean
+  total           Int
+  status          OrderStatus @default(PENDING)
+  rejectionReason String?
+  ipAddress       String?
+  idempotencyKey  String?     @unique
+
+  // Payment & Admin
+  paymentReceived Boolean @default(false)
+  adminNotes      String? @db.Text
+
+  // Shipping & tracking
+  trackingNumber String?
+  courierName    String?
+
+  // Coupons
+  couponId       String?
+  couponCode     String?
+  couponDiscount Int?
+  coupon         Coupon? @relation(fields: [couponId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items         OrderItem[]
+  notifications NotificationLog[]
+
+  @@index([status])
+  @@index([phone])
+  @@index([createdAt])
+  @@index([couponId])
+}
+
+model OrderItem {
+  id        String @id @default(cuid())
+  quantity  Int
+  price     Int
+  orderId   String
+  productId String
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+}
+
+model Review {
+  id               String   @id @default(cuid())
+  userName         String
+  address          String?
+  rating           Int
+  comment          String
+  productId        String
+  approved         Boolean  @default(true)
+  verifiedPurchase Boolean  @default(false)
+  images           String[]
+  video            String?
+  isFeatured       Boolean  @default(false)
+  isHidden         Boolean  @default(false)
+  isVerified       Boolean  @default(false)
+  ipAddress        String?
+  sortOrder        Int      @default(0)
+  createdAt        DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([approved])
+  @@index([isFeatured])
+  @@index([isHidden])
+  @@index([ipAddress, createdAt])
+}
+
+model Transformation {
+  id           String   @id @default(cuid())
+  beforeImage  String
+  afterImage   String
+  caption      String?
+  productId    String
+  durationUsed String?
+  isFeatured   Boolean  @default(false)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([isFeatured])
+}
+
+model Coupon {
+  id            String       @id @default(cuid())
+  code          String       @unique
+  description   String?
+  discountType  DiscountType
+  discountValue Int
+
+  // Restrictions
+  appliesToAll   Boolean  @default(true)
+  productIds     String[]
+  categoryIds    String[]
+  minOrderAmount Int?
+  maxDiscountCap Int?
+
+  // Usage tracking
+  usageLimit   Int?
+  usageCount   Int  @default(0)
+  perUserLimit Int? @default(1)
+
+  // Validity
+  startsAt  DateTime?
+  expiresAt DateTime?
+
+  // Visibility & Soft Delete
+  isActive  Boolean   @default(true)
+  deletedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders Order[]
+
+  @@index([code])
+  @@index([isActive])
+  @@index([expiresAt])
+}
+
+model NotificationLog {
+  id           String   @id @default(cuid())
+  orderId      String
+  type         String // SMS, EMAIL
+  status       String // SUCCESS, FAILED
+  errorMessage String?
+  sentAt       DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+model SiteConfig {
+  id         Int     @id @default(1)
+  storeName  String  @default("Luxe Moon")
+  bannerText String  @default("Rooted in Korea. Created for the World.")
+  logoUrl    String?
+  faviconUrl String?
+
+  // Delivery
+  deliveryChargeInside     Int     @default(0)
+  deliveryChargeOutside    Int     @default(150)
+  freeDeliveryThreshold    Int     @default(5000)
+  codFee                   Int     @default(0)
+  expressDeliveryEnabled   Boolean @default(false)
+  estimatedDeliveryInside  String  @default("1-2 days")
+  estimatedDeliveryOutside String  @default("3-5 days")
+
+  // Global Discount
+  globalDiscountPercent Int       @default(0)
+  globalDiscountStart   DateTime?
+  globalDiscountEnd     DateTime?
+  allowStacking         Boolean   @default(false)
+
+  // Marketing
+  festiveSaleEnabled Boolean @default(false)
+
+  // Contact
+  contactPhone   String @default("+977 9800000000")
+  contactEmail   String @default("hello@luxemoon.com.np")
+  contactAddress String @default("Durbarmarg, Kathmandu")
+
+  // Social & Messaging
+  whatsappNumber String?
+  facebookUrl    String?
+  instagramUrl   String?
+  tiktokUrl      String?
+
+  // SEO
+  metaTitle       String?
+  metaDescription String?
+
+  // Content pages
+  footerContent   String? @db.Text
+  privacyPolicy   String? @db.Text
+  termsConditions String? @db.Text
+  aboutContent    String? @db.Text
+  deliveryPolicy  String? @db.Text
+  refundPolicy    String? @db.Text
+
+  // Notifications
+  emailNotificationsEnabled Boolean @default(false)
+  smsNotificationsEnabled   Boolean @default(false)
+}
+
+model HomepageContent {
+  id                Int     @id @default(1)
+  heroSlides        Json    @default("[]")
+  banners           Json    @default("[]")
+  promotionalImages Json    @default("[]")
+  noticeBarText     String?
+  noticeBarEnabled  Boolean @default(false)
+}
+
+model NotificationTemplate {
+  id       String  @id @default(cuid())
+  type     String  @unique // e.g. ORDER_CONFIRMED, ORDER_SHIPPED
+  subject  String
+  bodyHtml String
+  smsBody  String
+  isSMS    Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model BlockedCustomer {
+  id        String   @id @default(cuid())
+  phone     String   @unique
+  reason    String
+  createdAt DateTime @default(now())
+}
+
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  ip        String
+  email     String
+  success   Boolean
+  createdAt DateTime @default(now())
+
+  @@index([ip, createdAt])
+}
+
+model ContactMessage {
+  id          String   @id @default(cuid())
+  name        String
+  email       String?
+  phone       String
+  subject     String
+  message     String   @db.Text
+  ipAddress   String?
+  isResolved  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([isResolved])
+}

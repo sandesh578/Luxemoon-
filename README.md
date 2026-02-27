@@ -1,20 +1,75 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Luxe Moon Haircare Website
 
-# Run and deploy your AI Studio app
+Production-focused Next.js 15 + Prisma ecommerce website for Luxe Moon haircare.
 
-This contains everything you need to run your app locally.
+## Tech Stack
 
-View your app in AI Studio: https://ai.studio/apps/drive/1k7XaA-9oIeJn3H7Agu_g4ALCbGIm9Ab3
+- Next.js 15 (App Router)
+- TypeScript (strict)
+- Prisma + PostgreSQL
+- Tailwind CSS
+- Cloudinary (media)
+- Resend / Sparrow SMS (notifications)
 
-## Run Locally
+## Environment Setup
 
-**Prerequisites:**  Node.js
+Create `.env` from `.env.example` and configure:
 
+```bash
+DATABASE_URL="postgresql://..."
+JWT_SECRET="strong-random-secret"
+ADMIN_EMAIL="admin@yourdomain.com"
+ADMIN_PASSWORD="strong-admin-password"
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=""
+CLOUDINARY_API_KEY=""
+CLOUDINARY_API_SECRET=""
+RESEND_API_KEY=""
+SPARROW_SMS_TOKEN=""
+```
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+Required at runtime:
+
+- `DATABASE_URL`
+- `JWT_SECRET`
+- `ADMIN_EMAIL`
+- `ADMIN_PASSWORD`
+
+## Local Development
+
+```bash
+npm install
+npx prisma generate
+npx prisma migrate dev
+npm run dev
+```
+
+## Database Migration
+
+Development:
+
+```bash
+npx prisma migrate dev
+```
+
+Production:
+
+```bash
+npx prisma migrate deploy
+```
+
+## Build and Run
+
+```bash
+npm run lint
+npm run build
+npm run start
+```
+
+## Deployment Checklist
+
+1. Set all required environment variables in your hosting platform.
+2. Run `npx prisma migrate deploy` during deployment.
+3. Ensure Cloudinary variables are set if media upload is enabled.
+4. Run `npm run build` in CI before promoting to production.
+5. Restrict admin credentials and rotate `JWT_SECRET` periodically.
+

@@ -1,10 +1,12 @@
 import { MetadataRoute } from 'next';
 import { prisma } from '@/lib/prisma';
 
-export const revalidate = 3600;
+export const dynamic = 'force-dynamic';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const products = await prisma.product.findMany();
+  const products = await prisma.product.findMany({
+    where: { isActive: true, isArchived: false, isDraft: false }
+  });
 
   const productEntries: MetadataRoute.Sitemap = products.map((product) => ({
     url: `https://luxemoon.com.np/products/${product.slug}`,

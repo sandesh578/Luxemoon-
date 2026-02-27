@@ -16,6 +16,14 @@ export interface Product {
   features: string[];
   stock: number;
   videoUrl?: string | null;
+  sku?: string | null;
+  discountPercent?: number;
+  discountFixed?: number | null;
+  discountStart?: string | null;
+  discountEnd?: string | null;
+  isFeatured?: boolean;
+  isNew?: boolean;
+  tags?: string[];
 }
 
 export interface CartItem extends Product {
@@ -25,12 +33,33 @@ export interface CartItem extends Product {
 export interface SiteConfig {
   storeName: string;
   bannerText: string;
+  logoUrl?: string | null;
   deliveryChargeInside: number;
   deliveryChargeOutside: number;
   freeDeliveryThreshold: number;
+  codFee: number;
+  expressDeliveryEnabled: boolean;
+  estimatedDeliveryInside: string;
+  estimatedDeliveryOutside: string;
+  globalDiscountPercent: number;
+  globalDiscountStart?: string | null;
+  globalDiscountEnd?: string | null;
   contactPhone: string;
   contactEmail: string;
   contactAddress: string;
+  whatsappNumber?: string | null;
+  facebookUrl?: string | null;
+  instagramUrl?: string | null;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  footerContent?: string | null;
+  privacyPolicy?: string | null;
+  termsConditions?: string | null;
+  aboutContent?: string | null;
+  emailNotificationsEnabled: boolean;
+  smsNotificationsEnabled: boolean;
+  noticeBarEnabled?: boolean;
+  noticeBarText?: string | null;
 }
 
 interface LocationContextType {
@@ -64,24 +93,23 @@ export const Providers = ({ children, config }: { children?: React.ReactNode, co
   const [isInsideValley, setInsideValleyState] = useState(true);
   const [items, setItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
     const saved = localStorage.getItem('lm_cart');
     if (saved) {
       try {
         setItems(JSON.parse(saved));
-      } catch (e) {
-        console.error("Failed to parse cart data", e);
+      } catch {
         localStorage.removeItem('lm_cart');
       }
     }
+    setHydrated(true);
   }, []);
 
   useEffect(() => {
-    if (mounted) localStorage.setItem('lm_cart', JSON.stringify(items));
-  }, [items, mounted]);
+    if (hydrated) localStorage.setItem('lm_cart', JSON.stringify(items));
+  }, [items, hydrated]);
 
   const toggleLocation = () => setInsideValleyState(prev => !prev);
   const setInsideValley = (val: boolean) => setInsideValleyState(val);
@@ -98,7 +126,7 @@ export const Providers = ({ children, config }: { children?: React.ReactNode, co
   };
 
   const removeFromCart = (id: string) => setItems(prev => prev.filter(item => item.id !== id));
-  
+
   const updateQuantity = (id: string, qty: number) => {
     if (qty < 1) return;
     setItems(prev => prev.map(item => item.id === id ? { ...item, quantity: qty } : item));
@@ -111,13 +139,11 @@ export const Providers = ({ children, config }: { children?: React.ReactNode, co
     return sum + (price * item.quantity);
   }, 0);
 
-  const deliveryCharge = cartTotal >= config.freeDeliveryThreshold 
-    ? 0 
+  const deliveryCharge = cartTotal >= config.freeDeliveryThreshold
+    ? 0
     : (isInsideValley ? config.deliveryChargeInside : config.deliveryChargeOutside);
 
   const finalTotal = cartTotal + deliveryCharge;
-
-  if (!mounted) return null;
 
   return (
     <ConfigContext.Provider value={{ config }}>

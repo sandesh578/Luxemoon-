@@ -1,10 +1,20 @@
 import { NextResponse } from 'next/server';
-import { encrypt } from '@/lib/auth';
-import { cookies, headers } from 'next/headers';
+import { encrypt } from '@/lib/auth-edge';
+import { headers } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
+import { validateServerEnv } from '@/lib/env';
 
 export const runtime = 'nodejs';
+
+validateServerEnv();
+
+const adminEmail = process.env.ADMIN_EMAIL;
+const adminPass = process.env.ADMIN_PASSWORD;
+
+if (!adminEmail || !adminPass) {
+  throw new Error('Missing required environment variables: ADMIN_EMAIL, ADMIN_PASSWORD');
+}
 
 export async function POST(req: Request) {
   try {
@@ -13,47 +23,57 @@ export async function POST(req: Request) {
     const forwardedFor = headersList.get('x-forwarded-for');
     const ip = forwardedFor ? forwardedFor.split(',')[0] : 'unknown';
 
-    // 1. Rate Limiting
-    const recentAttempts = await prisma.loginAttempt.count({
+    // 1. Rate Limiting — count only FAILED attempts in the last minute
+    const recentFailedAttempts = await prisma.loginAttempt.count({
       where: {
         ip,
-        createdAt: { gt: new Date(Date.now() - 60 * 1000) } // 1 minute
+        success: false,
+        createdAt: { gt: new Date(Date.now() - 60 * 1000) }
       }
     });
 
-    if (recentAttempts >= 5) {
+    if (recentFailedAttempts >= 5) {
       logger.warn('Admin login rate limit exceeded', { ip });
-      return NextResponse.json({ error: 'Too many login attempts.' }, { status: 429 });
+      return NextResponse.json(
+        { error: 'Too many failed login attempts. Please wait 1 minute.' },
+        { status: 429 }
+      );
     }
 
-    // Use Environment Variables for credentials, fallback to defaults only for setup
-    const adminEmail = process.env.ADMIN_EMAIL || 'admin@luxemoon.com';
-    const adminPass = process.env.ADMIN_PASSWORD || 'admin';
-
+    // 2. Credential verification
     const isValid = email === adminEmail && password === adminPass;
 
-    // Log attempt
-    await prisma.loginAttempt.create({
-      data: { ip, email: email.substring(0, 50), success: isValid }
-    });
-
     if (!isValid) {
+      // Log failed attempt
+      await prisma.loginAttempt.create({
+        data: { ip, email: email.substring(0, 50), success: false }
+      });
       logger.warn('Invalid admin login attempt', { ip, email });
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    const token = await encrypt({ email });
-    const cookieStore = await cookies();
-    
-    cookieStore.set('session', token, {
+    // 3. Success — clear failed attempts for this IP, log success
+    await prisma.loginAttempt.deleteMany({
+      where: { ip, success: false }
+    });
+    await prisma.loginAttempt.create({
+      data: { ip, email: email.substring(0, 50), success: true }
+    });
+
+    // 4. Sign JWT and set cookie on the RESPONSE object
+    const token = await encrypt({ email, role: 'admin' });
+
+    const response = NextResponse.json({ success: true });
+    response.cookies.set('session', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
+      maxAge: 60 * 60 * 24, // 24 hours
     });
 
-    logger.info('Admin logged in', { ip });
-    return NextResponse.json({ success: true });
+    logger.info('Admin logged in successfully', { ip });
+    return response;
 
   } catch (error) {
     logger.error('Login error', error);
