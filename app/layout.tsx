@@ -28,11 +28,11 @@ export async function generateMetadata(): Promise<Metadata> {
   const metadataBase = process.env.NEXT_PUBLIC_SITE_URL || "https://luxemoon.com.np";
 
   return {
-    title: config.metaTitle || (locale === 'ne' ? `${config.storeName} | नानो बोटक्स 4-in-1 हेयरकेयर` : `${config.storeName} | Nano Botox 4-in-1 Haircare`),
+    title: config.metaTitle || (locale === "ne" ? `${config.storeName} | Premium Korean Haircare` : `${config.storeName} | Nano Botox 4-in-1 Haircare`),
     description:
       config.metaDescription ||
-      (locale === 'ne'
-        ? "LuxeMoon Nano Botox 4-in-1 हेयरकेयर प्रणाली: Anti-Hair Fall Shampoo, Shining Silk Hair Mask, र Soft & Silky Hair Serum।"
+      (locale === "ne"
+        ? "LuxeMoon premium Korean haircare system for smooth, nourished, and stronger hair."
         : "LuxeMoon Nano Botox 4-in-1 haircare system: Anti-Hair Fall Shampoo, Shining Silk Hair Mask, and Soft & Silky Hair Serum."),
     metadataBase: new URL(metadataBase),
   };
@@ -49,7 +49,6 @@ export default async function RootLayout({
   ]);
   const locale = await getLocaleServer();
 
-  // Serialize Date fields to strings for the client component
   const config = {
     ...rawConfig,
     globalDiscountStart: rawConfig.globalDiscountStart?.toISOString() ?? null,
@@ -60,6 +59,10 @@ export default async function RootLayout({
 
   return (
     <html lang={locale}>
+      <head>
+        <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="" />
+        <link rel="preconnect" href="https://nominatim.openstreetmap.org" crossOrigin="" />
+      </head>
       <body className={`${playfair.variable} ${lato.variable} font-sans bg-[#F6EFE7] text-[#5C3A21]`}>
         <Providers config={config} initialLocale={locale}>
           <Navbar />

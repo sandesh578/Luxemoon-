@@ -6,11 +6,37 @@
   --foreground-rgb: 92, 58, 33;
   --background-start-rgb: 246, 239, 231;
   --background-end-rgb: 246, 239, 231;
+  --lm-bg: #F6EFE7;
+  --lm-text: #5C3A21;
+  --lm-accent: #C7782A;
+  --lm-radius-lg: 18px;
+  --lm-radius-xl: 26px;
+  --lm-shadow-soft: 0 10px 35px rgba(92, 58, 33, 0.12);
+  --lm-shadow-float: 0 16px 45px rgba(92, 58, 33, 0.18);
+  --lm-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
 body {
   color: rgb(var(--foreground-rgb));
   background: #F6EFE7;
+}
+
+.lux-fade {
+  animation: fade-in-up 0.55s var(--lm-ease);
+}
+
+.lux-hover-lift {
+  transition: transform 0.28s var(--lm-ease), box-shadow 0.28s var(--lm-ease);
+}
+
+.lux-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--lm-shadow-float);
+}
+
+.content-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: 700px;
 }
 
 @keyframes slide-in-right {

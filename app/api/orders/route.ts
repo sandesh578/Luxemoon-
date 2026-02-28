@@ -11,11 +11,11 @@ import { NEPAL_PROVINCES, isValidProvinceDistrict } from '@/lib/nepal-data';
 export const runtime = 'nodejs';
 
 const OrderSchema = z.object({
-  customerName: z.string().min(1).max(100),
-  phone: z.string().regex(/^9\d{9}$/, 'Phone must be 10 digits starting with 9'),
+  customerName: z.string().min(1, 'Please enter your full name so we know who to deliver to.').max(100),
+  phone: z.string().regex(/^9[78]\d{8}$/, 'Please enter a valid Nepali mobile number (98XXXXXXXX).'),
   province: z.string().refine(val => val in NEPAL_PROVINCES, { message: 'Invalid province' }),
   district: z.string().min(1).max(100),
-  address: z.string().min(1).max(500),
+  address: z.string().min(1, 'Kindly provide your delivery address.').max(500),
   landmark: z.string().max(200).optional(),
   notes: z.string().max(500).optional(),
   website: z.string().max(100).optional(),
@@ -254,7 +254,7 @@ export async function POST(req: Request) {
   } catch (error) {
     logger.error('Order creation failed', error);
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Invalid data', details: error.errors }, { status: 400 });
+      return NextResponse.json({ error: 'Please review the highlighted fields to complete your order.', details: error.errors }, { status: 400 });
     }
     const errorMessage = error instanceof Error ? error.message : 'Order creation failed';
     return NextResponse.json({ error: errorMessage }, { status: 400 });

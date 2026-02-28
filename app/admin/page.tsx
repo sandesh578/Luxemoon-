@@ -6,7 +6,6 @@ export const dynamic = 'force-dynamic';
 export default async function AdminDashboard() {
   const [orders, statusCounts, revenueStats] = await Promise.all([
     prisma.order.findMany({
-      take: 25,
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
