@@ -8,6 +8,42 @@ let cacheTimestamp = 0;
 let cachedHomepageNotice: { noticeBarText: string | null; noticeBarEnabled: boolean } | null = null;
 let homepageCacheTimestamp = 0;
 const CACHE_TTL = 300_000; // 5 minutes
+const DEFAULT_SITE_CONFIG: SiteConfig = {
+  id: 1,
+  storeName: "Luxe Moon",
+  bannerText: "Rooted in Korea. Created for the World.",
+  logoUrl: null,
+  faviconUrl: null,
+  deliveryChargeInside: 0,
+  deliveryChargeOutside: 150,
+  freeDeliveryThreshold: 5000,
+  codFee: 0,
+  expressDeliveryEnabled: false,
+  estimatedDeliveryInside: "1-2 days",
+  estimatedDeliveryOutside: "3-5 days",
+  globalDiscountPercent: 0,
+  globalDiscountStart: null,
+  globalDiscountEnd: null,
+  allowStacking: false,
+  festiveSaleEnabled: false,
+  contactPhone: "+977 9800000000",
+  contactEmail: "hello@luxemoon.com.np",
+  contactAddress: "Durbarmarg, Kathmandu",
+  whatsappNumber: null,
+  facebookUrl: null,
+  instagramUrl: null,
+  tiktokUrl: null,
+  metaTitle: null,
+  metaDescription: null,
+  footerContent: null,
+  privacyPolicy: null,
+  termsConditions: null,
+  aboutContent: null,
+  deliveryPolicy: null,
+  refundPolicy: null,
+  emailNotificationsEnabled: false,
+  smsNotificationsEnabled: false,
+};
 
 async function _getSiteConfig() {
   const now = Date.now();
@@ -15,28 +51,35 @@ async function _getSiteConfig() {
     return cachedConfig;
   }
 
-  let config = await prisma.siteConfig.findFirst();
+  let config: SiteConfig | null = null;
 
-  if (!config) {
-    config = await prisma.siteConfig.create({
-      data: {
-        storeName: "Luxe Moon",
-        bannerText: "Rooted in Korea. Created for the World.",
-        deliveryChargeInside: 0,
-        deliveryChargeOutside: 150,
-        freeDeliveryThreshold: 5000,
-        codFee: 0,
-        expressDeliveryEnabled: false,
-        estimatedDeliveryInside: "1-2 days",
-        estimatedDeliveryOutside: "3-5 days",
-        contactPhone: "+977 9800000000",
-        contactEmail: "hello@luxemoon.com.np",
-        contactAddress: "Durbarmarg, Kathmandu",
-        emailNotificationsEnabled: false,
-        smsNotificationsEnabled: false,
-        globalDiscountPercent: 0,
-      },
-    });
+  try {
+    config = await prisma.siteConfig.findFirst();
+
+    if (!config) {
+      config = await prisma.siteConfig.create({
+        data: {
+          storeName: DEFAULT_SITE_CONFIG.storeName,
+          bannerText: DEFAULT_SITE_CONFIG.bannerText,
+          deliveryChargeInside: DEFAULT_SITE_CONFIG.deliveryChargeInside,
+          deliveryChargeOutside: DEFAULT_SITE_CONFIG.deliveryChargeOutside,
+          freeDeliveryThreshold: DEFAULT_SITE_CONFIG.freeDeliveryThreshold,
+          codFee: DEFAULT_SITE_CONFIG.codFee,
+          expressDeliveryEnabled: DEFAULT_SITE_CONFIG.expressDeliveryEnabled,
+          estimatedDeliveryInside: DEFAULT_SITE_CONFIG.estimatedDeliveryInside,
+          estimatedDeliveryOutside: DEFAULT_SITE_CONFIG.estimatedDeliveryOutside,
+          contactPhone: DEFAULT_SITE_CONFIG.contactPhone,
+          contactEmail: DEFAULT_SITE_CONFIG.contactEmail,
+          contactAddress: DEFAULT_SITE_CONFIG.contactAddress,
+          emailNotificationsEnabled: DEFAULT_SITE_CONFIG.emailNotificationsEnabled,
+          smsNotificationsEnabled: DEFAULT_SITE_CONFIG.smsNotificationsEnabled,
+          globalDiscountPercent: DEFAULT_SITE_CONFIG.globalDiscountPercent,
+        },
+      });
+    }
+  } catch {
+    // During build or temporary DB outages, keep rendering with safe defaults.
+    config = DEFAULT_SITE_CONFIG;
   }
 
   cachedConfig = config;
@@ -53,15 +96,22 @@ async function _getHomepageNotice() {
     return cachedHomepageNotice;
   }
 
-  const homepage = await prisma.homepageContent.findUnique({
-    where: { id: 1 },
-    select: { noticeBarText: true, noticeBarEnabled: true },
-  });
+  try {
+    const homepage = await prisma.homepageContent.findUnique({
+      where: { id: 1 },
+      select: { noticeBarText: true, noticeBarEnabled: true },
+    });
 
-  cachedHomepageNotice = {
-    noticeBarText: homepage?.noticeBarText ?? null,
-    noticeBarEnabled: homepage?.noticeBarEnabled ?? false,
-  };
+    cachedHomepageNotice = {
+      noticeBarText: homepage?.noticeBarText ?? null,
+      noticeBarEnabled: homepage?.noticeBarEnabled ?? false,
+    };
+  } catch {
+    cachedHomepageNotice = {
+      noticeBarText: null,
+      noticeBarEnabled: false,
+    };
+  }
   homepageCacheTimestamp = now;
   return cachedHomepageNotice;
 }
