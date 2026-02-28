@@ -203,6 +203,7 @@ export default function ProductPageClient({ product }: { product: ProductData })
         const files = e.target.files;
         if (!files || files.length === 0) return;
 
+        let imageCount = reviewForm.images.length;
         setUploadingMedia(true);
         try {
             for (let i = 0; i < files.length; i++) {
@@ -215,7 +216,7 @@ export default function ProductPageClient({ product }: { product: ProductData })
                     continue;
                 }
 
-                if (type === 'image' && reviewForm.images.length >= 3) {
+                if (type === 'image' && imageCount >= 3) {
                     toast.error('Maximum 3 images allowed');
                     break;
                 }
@@ -246,6 +247,7 @@ export default function ProductPageClient({ product }: { product: ProductData })
                 if (type === 'video') {
                     setReviewForm(prev => ({ ...prev, video: uploadData.secure_url }));
                 } else {
+                    imageCount += 1;
                     setReviewForm(prev => ({ ...prev, images: [...prev.images, uploadData.secure_url] }));
                 }
             }
@@ -253,6 +255,7 @@ export default function ProductPageClient({ product }: { product: ProductData })
             toast.error('Failed to upload media');
         } finally {
             setUploadingMedia(false);
+            e.target.value = '';
         }
     };
 
@@ -606,7 +609,7 @@ export default function ProductPageClient({ product }: { product: ProductData })
                                             </div>
                                             <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest bg-white/5 px-3 py-1 rounded-full">Spotlight Review</span>
                                         </div>
-                                        <p className="text-xl md:text-2xl font-serif italic leading-relaxed text-stone-100">"{r.comment}"</p>
+                                        <p className="text-xl md:text-2xl font-serif italic leading-relaxed text-stone-100">&quot;{r.comment}&quot;</p>
                                         <div className="flex items-center gap-4">
                                             <div className="w-12 h-12 rounded-full bg-stone-800 flex items-center justify-center font-bold text-lg">{r.userName.charAt(0)}</div>
                                             <div>
@@ -643,7 +646,7 @@ export default function ProductPageClient({ product }: { product: ProductData })
                                         </div>
                                     </div>
 
-                                    <p className="text-sm text-stone-600 leading-relaxed italic mb-6 flex-1">"{r.comment}"</p>
+                                    <p className="text-sm text-stone-600 leading-relaxed italic mb-6 flex-1">&quot;{r.comment}&quot;</p>
 
                                     {/* Review Media */}
                                     {(r.images.length > 0 || r.video) && (

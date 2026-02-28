@@ -9,7 +9,12 @@ type OptimizedImageProps = Omit<ImageProps, 'src'> & {
 
 export function OptimizedImage({ src, alt, ...props }: OptimizedImageProps) {
   if (!src) {
-    return <img alt={alt || ''} {...(props as any)} />;
+    return (
+      <span
+        aria-label={alt || "Image unavailable"}
+        className="block h-full w-full bg-stone-100"
+      />
+    );
   }
 
   const normalizedSrc = typeof src === 'string' ? optimizeImage(src) : src;

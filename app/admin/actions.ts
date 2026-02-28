@@ -489,6 +489,39 @@ export async function removeFromBlacklist(id: string): Promise<{ success: boolea
   revalidatePath('/admin/customers');
   return { success: true };
 }
+
+// --- MESSAGE ACTIONS ---
+
+export async function toggleMessageResolved(
+  id: string,
+  isResolved: boolean
+): Promise<{ success: boolean; error?: string }> {
+  await verifyAdmin();
+  try {
+    await prisma.contactMessage.update({
+      where: { id },
+      data: { isResolved },
+    });
+    revalidatePath('/admin/messages');
+    return { success: true };
+  } catch (error) {
+    logger.error("Failed to toggle message resolved state", error);
+    return { success: false, error: "Failed to update message" };
+  }
+}
+
+export async function deleteMessage(id: string): Promise<{ success: boolean; error?: string }> {
+  await verifyAdmin();
+  try {
+    await prisma.contactMessage.delete({ where: { id } });
+    revalidatePath('/admin/messages');
+    return { success: true };
+  } catch (error) {
+    logger.error("Failed to delete message", error);
+    return { success: false, error: "Failed to delete message" };
+  }
+}
+
 export async function getHomepageContent() {
   await verifyAdmin();
   let content = await prisma.homepageContent.findUnique({ where: { id: 1 } });
@@ -513,6 +546,7 @@ export async function updateHomepageContent(data: any): Promise<{ success: boole
         noticeBarEnabled: Boolean(data.noticeBarEnabled),
       }
     });
+    invalidateSiteConfig();
     revalidatePath('/');
     revalidatePath('/admin/homepage');
     return { success: true };

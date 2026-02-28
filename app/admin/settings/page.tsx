@@ -93,6 +93,7 @@ export default function SettingsPage() {
               <Field label="Address" value={String(formData.contactAddress || '')} onChange={v => set('contactAddress', v)} />
               <Field label="Facebook URL" value={String(formData.facebookUrl || '')} onChange={v => set('facebookUrl', v)} placeholder="https://facebook.com/..." />
               <Field label="Instagram URL" value={String(formData.instagramUrl || '')} onChange={v => set('instagramUrl', v)} placeholder="https://instagram.com/..." />
+              <Field label="TikTok URL" value={String(formData.tiktokUrl || '')} onChange={v => set('tiktokUrl', v)} placeholder="https://tiktok.com/@..." />
             </div>
           </div>
         )}
@@ -126,6 +127,13 @@ export default function SettingsPage() {
               </div>
               <p className="text-xs text-stone-400 mt-1">Applied on top of product-level discounts. Leave dates empty for always-active.</p>
             </div>
+
+            <ToggleField
+              label="Allow Discount Stacking"
+              checked={Boolean(formData.allowStacking)}
+              onChange={v => set('allowStacking', v)}
+              description="If enabled, global discount can stack on product-level discount."
+            />
           </div>
         )}
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -23,11 +23,7 @@ export default function EditCategory() {
         isArchived: false,
     });
 
-    useEffect(() => {
-        fetchCategory();
-    }, [id]);
-
-    const fetchCategory = async () => {
+    const fetchCategory = useCallback(async () => {
         try {
             const res = await fetch(`/api/categories/${id}`);
 
@@ -50,7 +46,11 @@ export default function EditCategory() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [id, router]);
+
+    useEffect(() => {
+        fetchCategory();
+    }, [fetchCategory]);
 
     const set = (key: string, value: string | boolean) => setForm(prev => ({ ...prev, [key]: value }));
 

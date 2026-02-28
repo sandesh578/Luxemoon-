@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Phone, Mail, MapPin, MessageCircle, Send, CheckCircle2, AlertCircle } from 'lucide-react';
 import { z } from 'zod';
 import { toast } from 'sonner';
+import { useI18n } from '@/components/Providers';
 
 interface ContactConfig {
     contactPhone: string;
@@ -23,6 +24,7 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 export default function ContactClient({ config }: { config: ContactConfig }) {
+    const { t } = useI18n();
     const [formData, setFormData] = useState<FormData>({
         name: '',
         email: '',
@@ -36,8 +38,8 @@ export default function ContactClient({ config }: { config: ContactConfig }) {
     const [isSuccess, setIsSuccess] = useState(false);
 
     const cleanWhatsAppUrl = config.whatsappNumber
-        ? `https://wa.me/${config.whatsappNumber.replace(/[^0-9]/g, '')}?text=${encodeURIComponent('Hello Luxe Moon')}`
-        : `https://wa.me/9779800000000?text=${encodeURIComponent('Hello Luxe Moon')}`;
+        ? `https://wa.me/${config.whatsappNumber.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(t('whatsapp.helloMessage'))}`
+        : `https://wa.me/9779800000000?text=${encodeURIComponent(t('whatsapp.helloMessage'))}`;
 
     const validateField = (field: keyof FormData, value: string) => {
         try {
@@ -85,7 +87,7 @@ export default function ContactClient({ config }: { config: ContactConfig }) {
             }
 
             setIsSuccess(true);
-            toast.success('Your message has been sent successfully.');
+            toast.success(t('contact.toastSent'));
 
         } catch (error) {
             if (error instanceof z.ZodError) {
@@ -94,11 +96,11 @@ export default function ContactClient({ config }: { config: ContactConfig }) {
                     if (err.path[0]) newErrors[err.path[0]] = err.message;
                 });
                 setErrors(newErrors);
-                toast.error('Please fix the errors in the form.');
+                toast.error(t('contact.toastFixErrors'));
             } else if (error instanceof Error) {
                 toast.error(error.message);
             } else {
-                toast.error('Something went wrong.');
+                toast.error(t('contact.toastSomethingWrong'));
             }
         } finally {
             setIsSubmitting(false);
@@ -111,10 +113,10 @@ export default function ContactClient({ config }: { config: ContactConfig }) {
             <section className="relative px-4 pt-20 pb-16 overflow-hidden flex flex-col items-center justify-center text-center">
                 <div className="absolute inset-0 bg-gradient-to-b from-[#F6EFE7] to-stone-50/50 -z-10" />
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-1000 ease-out max-w-2xl mx-auto space-y-6">
-                    <span className="text-amber-600 font-bold text-xs tracking-widest uppercase">Contact Luxe Moon</span>
-                    <h1 className="font-serif text-5xl md:text-6xl font-bold text-[#5C3A21] leading-tight">We're here to help you shine.</h1>
+                    <span className="text-amber-600 font-bold text-xs tracking-widest uppercase">{t('contact.heroTag')}</span>
+                    <h1 className="font-serif text-5xl md:text-6xl font-bold text-[#5C3A21] leading-tight">{t('contact.heroTitle')}</h1>
                     <p className="text-stone-600 text-lg md:text-xl">
-                        Whether you have a question about our premium hair care line or need assistance with your order, our dedicated team is at your service.
+                        {t('contact.heroBody')}
                     </p>
                 </div>
             </section>
@@ -134,9 +136,9 @@ export default function ContactClient({ config }: { config: ContactConfig }) {
                                     <div className="w-24 h-24 bg-amber-50 rounded-full flex items-center justify-center mb-4">
                                         <CheckCircle2 className="w-12 h-12 text-[#C7782A]" />
                                     </div>
-                                    <h3 className="font-serif text-3xl font-bold text-[#5C3A21]">Message Received</h3>
+                                    <h3 className="font-serif text-3xl font-bold text-[#5C3A21]">{t('contact.messageReceived')}</h3>
                                     <p className="text-stone-600 text-lg max-w-sm mx-auto">
-                                        Thank you for reaching out to Luxe Moon. Our team will review your message and reply shortly.
+                                        {t('contact.messageReceivedBody')}
                                     </p>
                                     <button
                                         onClick={() => {
@@ -145,29 +147,29 @@ export default function ContactClient({ config }: { config: ContactConfig }) {
                                         }}
                                         className="mt-8 px-8 py-3 bg-stone-100 text-stone-700 font-bold rounded-full hover:bg-stone-200 transition-colors"
                                     >
-                                        Send Another Message
+                                        {t('contact.sendAnother')}
                                     </button>
                                 </div>
                             ) : (
                                 <form onSubmit={handleSubmit} className="space-y-6">
-                                    <h2 className="font-serif text-3xl font-bold text-[#5C3A21] mb-8">Send a Message</h2>
+                                    <h2 className="font-serif text-3xl font-bold text-[#5C3A21] mb-8">{t('contact.sendMessage')}</h2>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div className="space-y-2">
-                                            <label className="block text-xs font-bold text-[#5C3A21] uppercase tracking-widest">Full Name *</label>
+                                            <label className="block text-xs font-bold text-[#5C3A21] uppercase tracking-widest">{t('contact.fullName')} *</label>
                                             <input
                                                 name="name"
                                                 value={formData.name}
                                                 onChange={handleChange}
                                                 onBlur={(e) => validateField('name', e.target.value)}
                                                 className={`w-full bg-[#F6EFE7]/50 border-none rounded-2xl px-5 py-4 text-sm focus:ring-2 focus:ring-[#C7782A]/50 transition-all ${errors.name ? 'ring-2 ring-red-400 bg-red-50' : ''}`}
-                                                placeholder="e.g. Aavya Sharma"
+                                                placeholder={t('contact.placeholderName')}
                                             />
                                             {errors.name && <span className="text-red-500 text-xs font-medium flex items-center gap-1 mt-1"><AlertCircle className="w-3 h-3" />{errors.name}</span>}
                                         </div>
 
                                         <div className="space-y-2">
-                                            <label className="block text-xs font-bold text-[#5C3A21] uppercase tracking-widest">Email (Optional)</label>
+                                            <label className="block text-xs font-bold text-[#5C3A21] uppercase tracking-widest">{t('contact.emailOptional')}</label>
                                             <input
                                                 name="email"
                                                 value={formData.email}
@@ -182,7 +184,7 @@ export default function ContactClient({ config }: { config: ContactConfig }) {
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div className="space-y-2">
-                                            <label className="block text-xs font-bold text-[#5C3A21] uppercase tracking-widest">Phone Number *</label>
+                                            <label className="block text-xs font-bold text-[#5C3A21] uppercase tracking-widest">{t('contact.phoneNumber')} *</label>
                                             <input
                                                 name="phone"
                                                 value={formData.phone}
@@ -195,23 +197,23 @@ export default function ContactClient({ config }: { config: ContactConfig }) {
                                         </div>
 
                                         <div className="space-y-2">
-                                            <label className="block text-xs font-bold text-[#5C3A21] uppercase tracking-widest">Subject *</label>
+                                            <label className="block text-xs font-bold text-[#5C3A21] uppercase tracking-widest">{t('contact.subject')} *</label>
                                             <select
                                                 name="subject"
                                                 value={formData.subject}
                                                 onChange={handleChange}
                                                 className="w-full bg-[#F6EFE7]/50 border-none rounded-2xl px-5 py-4 text-sm focus:ring-2 focus:ring-[#C7782A]/50 transition-all outline-none"
                                             >
-                                                <option value="Product Query">Product Query</option>
-                                                <option value="Order Issue">Order Issue</option>
-                                                <option value="Collaboration">Collaboration</option>
-                                                <option value="Other">Other</option>
+                                                <option value="Product Query">{t('contact.subjectProductQuery')}</option>
+                                                <option value="Order Issue">{t('contact.subjectOrderIssue')}</option>
+                                                <option value="Collaboration">{t('contact.subjectCollaboration')}</option>
+                                                <option value="Other">{t('contact.subjectOther')}</option>
                                             </select>
                                         </div>
                                     </div>
 
                                     <div className="space-y-2 pt-2">
-                                        <label className="block text-xs font-bold text-[#5C3A21] uppercase tracking-widest">Your Message *</label>
+                                        <label className="block text-xs font-bold text-[#5C3A21] uppercase tracking-widest">{t('contact.yourMessage')} *</label>
                                         <textarea
                                             name="message"
                                             value={formData.message}
@@ -219,7 +221,7 @@ export default function ContactClient({ config }: { config: ContactConfig }) {
                                             onBlur={(e) => validateField('message', e.target.value)}
                                             rows={5}
                                             className={`w-full bg-[#F6EFE7]/50 border-none rounded-3xl px-5 py-4 text-sm focus:ring-2 focus:ring-[#C7782A]/50 transition-all resize-none ${errors.message ? 'ring-2 ring-red-400 bg-red-50' : ''}`}
-                                            placeholder="How can we help you?"
+                                            placeholder={t('contact.placeholderMessage')}
                                         />
                                         {errors.message && <span className="text-red-500 text-xs font-medium flex items-center gap-1 mt-1"><AlertCircle className="w-3 h-3" />{errors.message}</span>}
                                     </div>
@@ -232,15 +234,15 @@ export default function ContactClient({ config }: { config: ContactConfig }) {
                                         {isSubmitting ? (
                                             <>
                                                 <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                                                SENDING...
+                                                {t('contact.sending').toUpperCase()}
                                             </>
                                         ) : (
                                             <>
-                                                <Send className="w-5 h-5" /> SEND MESSAGE
+                                                <Send className="w-5 h-5" /> {t('contact.sendMessageBtn').toUpperCase()}
                                             </>
                                         )}
                                     </button>
-                                    <p className="text-center text-[10px] text-stone-400 uppercase tracking-wider font-bold mt-4">Protected by Recaptcha & IP Limits</p>
+                                    <p className="text-center text-[10px] text-stone-400 uppercase tracking-wider font-bold mt-4">{t('contact.protectedBy')}</p>
                                 </form>
                             )}
                         </div>
@@ -248,14 +250,14 @@ export default function ContactClient({ config }: { config: ContactConfig }) {
 
                     {/* Action Cards Side */}
                     <div className="flex-1 lg:w-96 order-1 lg:order-2 space-y-6 animate-in fade-in slide-in-from-right-8 duration-1000 delay-300">
-                        <h3 className="font-serif text-2xl font-bold text-[#5C3A21] mb-6 pt-2">Direct Contact</h3>
+                        <h3 className="font-serif text-2xl font-bold text-[#5C3A21] mb-6 pt-2">{t('contact.directContact')}</h3>
 
                         <a href={`tel:${config.contactPhone.replace(/[\s-]/g, '')}`} className="group flex items-center gap-5 p-6 bg-white rounded-3xl border border-stone-100 shadow-[0_4px_20px_rgb(0,0,0,0.02)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:border-[#C7782A]/30 transition-all duration-300 transform hover:-translate-y-1">
                             <div className="w-14 h-14 bg-[#F6EFE7] rounded-full flex items-center justify-center group-hover:bg-[#C7782A] group-hover:text-white transition-colors">
                                 <Phone className="w-6 h-6 text-[#5C3A21] group-hover:text-white transition-colors" />
                             </div>
                             <div>
-                                <h4 className="font-bold text-[#5C3A21] text-lg">Call Us</h4>
+                                <h4 className="font-bold text-[#5C3A21] text-lg">{t('contact.callUs')}</h4>
                                 <p className="text-sm text-stone-500 font-medium">{config.contactPhone}</p>
                             </div>
                         </a>
@@ -265,8 +267,8 @@ export default function ContactClient({ config }: { config: ContactConfig }) {
                                 <MessageCircle className="w-6 h-6 text-[#5C3A21] group-hover:text-white transition-colors" />
                             </div>
                             <div>
-                                <h4 className="font-bold text-[#5C3A21] text-lg">WhatsApp</h4>
-                                <p className="text-sm text-stone-500 font-medium">{config.whatsappNumber || "Message us directly"}</p>
+                                <h4 className="font-bold text-[#5C3A21] text-lg">{t('contact.whatsapp')}</h4>
+                                <p className="text-sm text-stone-500 font-medium">{config.whatsappNumber || t('contact.messageDirectly')}</p>
                             </div>
                         </a>
 
@@ -275,7 +277,7 @@ export default function ContactClient({ config }: { config: ContactConfig }) {
                                 <Mail className="w-6 h-6 text-[#5C3A21] group-hover:text-white transition-colors" />
                             </div>
                             <div>
-                                <h4 className="font-bold text-[#5C3A21] text-lg">Email Directly</h4>
+                                <h4 className="font-bold text-[#5C3A21] text-lg">{t('contact.emailDirectly')}</h4>
                                 <p className="text-sm text-stone-500 font-medium">{config.contactEmail}</p>
                             </div>
                         </a>
@@ -286,7 +288,7 @@ export default function ContactClient({ config }: { config: ContactConfig }) {
                                     <MapPin className="w-6 h-6 text-[#5C3A21] group-hover:text-white transition-colors" />
                                 </div>
                                 <div>
-                                    <h4 className="font-bold text-[#5C3A21] text-lg hover:underline decoration-[#C7782A]">Visit Our Office</h4>
+                                    <h4 className="font-bold text-[#5C3A21] text-lg hover:underline decoration-[#C7782A]">{t('contact.visitOffice')}</h4>
                                     <p className="text-sm text-stone-500 font-medium">{config.contactAddress}</p>
                                 </div>
                             </a>

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { type Locale, LOCALE_COOKIE_NAME, translate } from '@/lib/i18n';
 
 // Types
 export interface Product {
@@ -50,6 +51,7 @@ export interface SiteConfig {
   whatsappNumber?: string | null;
   facebookUrl?: string | null;
   instagramUrl?: string | null;
+  tiktokUrl?: string | null;
   metaTitle?: string | null;
   metaDescription?: string | null;
   footerContent?: string | null;
@@ -85,15 +87,31 @@ interface ConfigContextType {
   config: SiteConfig;
 }
 
+interface I18nContextType {
+  locale: Locale;
+  setLocale: (locale: Locale) => void;
+  t: (key: string, vars?: Record<string, string | number>) => string;
+}
+
 const LocationContext = createContext<LocationContextType | null>(null);
 const CartContext = createContext<CartContextType | null>(null);
 const ConfigContext = createContext<ConfigContextType | null>(null);
+const I18nContext = createContext<I18nContextType | null>(null);
 
-export const Providers = ({ children, config }: { children?: React.ReactNode, config: SiteConfig }) => {
+export const Providers = ({
+  children,
+  config,
+  initialLocale,
+}: {
+  children?: React.ReactNode,
+  config: SiteConfig,
+  initialLocale: Locale,
+}) => {
   const [isInsideValley, setInsideValleyState] = useState(true);
   const [items, setItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const [locale, setLocaleState] = useState<Locale>(initialLocale);
 
   useEffect(() => {
     const saved = localStorage.getItem('lm_cart');
@@ -113,6 +131,11 @@ export const Providers = ({ children, config }: { children?: React.ReactNode, co
 
   const toggleLocation = () => setInsideValleyState(prev => !prev);
   const setInsideValley = (val: boolean) => setInsideValleyState(val);
+  const setLocale = (nextLocale: Locale) => {
+    setLocaleState(nextLocale);
+    document.cookie = `${LOCALE_COOKIE_NAME}=${nextLocale}; path=/; max-age=31536000; samesite=lax`;
+    document.documentElement.lang = nextLocale;
+  };
 
   const addToCart = (product: Product, quantity: number) => {
     setItems(prev => {
@@ -144,14 +167,21 @@ export const Providers = ({ children, config }: { children?: React.ReactNode, co
     : (isInsideValley ? config.deliveryChargeInside : config.deliveryChargeOutside);
 
   const finalTotal = cartTotal + deliveryCharge;
+  const t = (key: string, vars?: Record<string, string | number>) => translate(locale, key, vars);
+
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
 
   return (
     <ConfigContext.Provider value={{ config }}>
-      <LocationContext.Provider value={{ isInsideValley, toggleLocation, setInsideValley }}>
-        <CartContext.Provider value={{ items, addToCart, removeFromCart, updateQuantity, clearCart, cartTotal, deliveryCharge, finalTotal, isCartOpen, setIsCartOpen }}>
-          {children}
-        </CartContext.Provider>
-      </LocationContext.Provider>
+      <I18nContext.Provider value={{ locale, setLocale, t }}>
+        <LocationContext.Provider value={{ isInsideValley, toggleLocation, setInsideValley }}>
+          <CartContext.Provider value={{ items, addToCart, removeFromCart, updateQuantity, clearCart, cartTotal, deliveryCharge, finalTotal, isCartOpen, setIsCartOpen }}>
+            {children}
+          </CartContext.Provider>
+        </LocationContext.Provider>
+      </I18nContext.Provider>
     </ConfigContext.Provider>
   );
 };
@@ -172,4 +202,10 @@ export const useConfig = () => {
   const ctx = useContext(ConfigContext);
   if (!ctx) throw new Error("useConfig missing");
   return ctx.config;
+};
+
+export const useI18n = () => {
+  const ctx = useContext(I18nContext);
+  if (!ctx) throw new Error("useI18n missing");
+  return ctx;
 };

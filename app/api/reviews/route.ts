@@ -2,22 +2,22 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { headers } from 'next/headers';
+import { ReviewSchema } from '@/lib/review-validation';
 
-const ReviewSchema = z.object({
-    productId: z.string().min(1),
-    userName: z.string().min(1).max(100).transform(s => s.replace(/<[^>]*>/g, '').trim()),
-    address: z.string().max(100).optional().or(z.literal('')).transform(s => s ? s.replace(/<[^>]*>/g, '').trim() : undefined),
-    rating: z.number().int().min(1).max(5),
-    comment: z.string().min(1).max(2000).transform(s => s.replace(/<[^>]*>/g, '').trim()),
-    images: z.array(z.string().url()).max(3).default([]),
-    video: z.string().url().optional().or(z.literal('')),
-});
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+function getClientIp(headersList: Headers): string {
+    const forwardedFor = headersList.get('x-forwarded-for');
+    if (forwardedFor) return forwardedFor.split(',')[0].trim();
+    const realIp = headersList.get('x-real-ip');
+    return realIp?.trim() || 'unknown';
+}
 
 export async function POST(req: Request) {
     try {
         const headersList = await headers();
-        const forwardedFor = headersList.get('x-forwarded-for');
-        const ip = forwardedFor ? forwardedFor.split(',')[0].trim() : 'unknown';
+        const ip = getClientIp(headersList);
 
         // Rate limit: 3 reviews per IP per hour
         const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
@@ -51,12 +51,12 @@ export async function POST(req: Request) {
         const review = await prisma.review.create({
             data: {
                 userName: data.userName,
-                address: data.address || null,
+                address: data.address,
                 rating: data.rating,
                 comment: data.comment,
                 productId: data.productId,
                 images: data.images,
-                video: data.video || null,
+                video: data.video,
                 approved: false, // Reviews should be approved by admin
                 ipAddress: ip,
             },

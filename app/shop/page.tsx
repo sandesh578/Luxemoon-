@@ -4,18 +4,22 @@ import Image from 'next/image';
 import { Star, Sparkles, ChevronRight, Grid } from 'lucide-react';
 
 import { SortDropdown } from './SortDropdown';
+import { translate } from '@/lib/i18n';
+import { getLocaleServer } from '@/lib/i18n-server';
 
 export const revalidate = 60;
 
 export default async function ShopPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+  const locale = await getLocaleServer();
+  const t = (key: string, vars?: Record<string, string | number>) => translate(locale, key, vars);
   const { sort, filter } = await searchParams;
   const sortParam = typeof sort === 'string' ? sort : '';
   const filterParam = typeof filter === 'string' ? filter : '';
 
   let orderBy: any = [{ isFeatured: 'desc' }, { createdAt: 'desc' }];
   let where: any = { isActive: true, isArchived: false, isDraft: false };
-  let pageTitle = "The Luxe Collection";
-  let pageSubtitle = "Premium Korean haircare solutions, curated for your specific hair needs.";
+  let pageTitle = t('shopPage.title');
+  let pageSubtitle = t('shopPage.subtitle');
 
   if (sortParam === 'price_asc') orderBy = { priceInside: 'asc' };
   else if (sortParam === 'price_desc') orderBy = { priceInside: 'desc' };
@@ -24,16 +28,16 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
 
   if (filterParam === 'featured') {
     where.isFeatured = true;
-    pageTitle = "Featured Collections";
-    pageSubtitle = "Curated essentials for your ultimate hair transformation journey.";
+    pageTitle = t('shopPage.featuredTitle');
+    pageSubtitle = t('shopPage.featuredSubtitle');
   } else if (filterParam === 'new') {
     where.isNew = true;
-    pageTitle = "New Arrivals";
-    pageSubtitle = "The latest innovations in Korean haircare.";
+    pageTitle = t('shopPage.newTitle');
+    pageSubtitle = t('shopPage.newSubtitle');
   } else if (filterParam === 'bestsellers') {
     orderBy = { orderItems: { _count: 'desc' } };
-    pageTitle = "Best Sellers";
-    pageSubtitle = "Our most loved products by the community.";
+    pageTitle = t('shopPage.bestTitle');
+    pageSubtitle = t('shopPage.bestSubtitle');
   }
 
   const [products, categories] = await Promise.all([
@@ -64,7 +68,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
       <div className="bg-white border-b border-stone-100 sticky top-16 z-10 overflow-x-auto no-scrollbar">
         <div className="max-w-7xl mx-auto px-4 flex gap-8 py-4">
           <Link href="/shop" className="text-sm font-bold text-amber-600 whitespace-nowrap border-b-2 border-amber-600 pb-1">
-            All Products
+            {t('shopPage.allProducts')}
           </Link>
           {categories.map(cat => (
             <Link
@@ -83,7 +87,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-12">
           <div className="flex items-center gap-2 text-stone-400">
             <Grid className="w-4 h-4" />
-            <span className="text-xs font-bold uppercase tracking-widest">Showing {products.length} Items</span>
+            <span className="text-xs font-bold uppercase tracking-widest">{t('shopPage.showingItems', { count: products.length })}</span>
           </div>
           <SortDropdown />
         </div>
@@ -111,19 +115,19 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
                 <div className="absolute top-4 left-4 flex flex-col gap-2">
                   {product.isFeatured && (
                     <span className="text-[10px] font-bold bg-amber-500/90 text-white px-2 py-1 rounded-full flex items-center gap-1 backdrop-blur-sm shadow-lg">
-                      <Star className="w-2 h-2 fill-current" /> BESTSELLER
+                      <Star className="w-2 h-2 fill-current" /> {t('shopPage.bestseller').toUpperCase()}
                     </span>
                   )}
                   {product.originalPrice && product.originalPrice > product.priceInside && (
                     <span className="text-[10px] font-bold bg-red-600 text-white px-3 py-1 rounded-full shadow-lg">
-                      OFFER
+                      {t('shopPage.offer').toUpperCase()}
                     </span>
                   )}
                 </div>
 
                 {product.stock <= 0 && (
                   <div className="absolute inset-0 bg-stone-900/40 flex items-center justify-center backdrop-blur-[2px]">
-                    <span className="bg-stone-900 border border-stone-800 text-white px-4 py-2 text-[10px] font-bold uppercase tracking-widest rounded-full">Sold Out</span>
+                    <span className="bg-stone-900 border border-stone-800 text-white px-4 py-2 text-[10px] font-bold uppercase tracking-widest rounded-full">{t('shopPage.soldOut')}</span>
                   </div>
                 )}
               </div>
@@ -132,9 +136,9 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
                   {product.name}
                 </h3>
                 <div className="flex items-center gap-3">
-                  <span className="font-bold text-stone-900">NPR {product.priceInside.toLocaleString()}</span>
+                  <span className="font-bold text-stone-900">{t('common.currency')} {product.priceInside.toLocaleString()}</span>
                   {product.originalPrice && product.originalPrice > product.priceInside && (
-                    <span className="text-xs text-stone-400 line-through">NPR {product.originalPrice.toLocaleString()}</span>
+                    <span className="text-xs text-stone-400 line-through">{t('common.currency')} {product.originalPrice.toLocaleString()}</span>
                   )}
                 </div>
               </div>

@@ -2,9 +2,11 @@ import { prisma } from "./prisma";
 import { cache } from "react";
 import { SiteConfig } from "@prisma/client";
 
-// In-memory TTL cache for SiteConfig
+// In-memory TTL cache for SiteConfig and homepage notice content.
 let cachedConfig: SiteConfig | null = null;
 let cacheTimestamp = 0;
+let cachedHomepageNotice: { noticeBarText: string | null; noticeBarEnabled: boolean } | null = null;
+let homepageCacheTimestamp = 0;
 const CACHE_TTL = 300_000; // 5 minutes
 
 async function _getSiteConfig() {
@@ -33,7 +35,7 @@ async function _getSiteConfig() {
         emailNotificationsEnabled: false,
         smsNotificationsEnabled: false,
         globalDiscountPercent: 0,
-      }
+      },
     });
   }
 
@@ -42,13 +44,37 @@ async function _getSiteConfig() {
   return config;
 }
 
-/** React cache()-wrapped export — deduplicates within a single render pass */
+/** React cache()-wrapped export that deduplicates within a single render pass. */
 export const getSiteConfig = cache(_getSiteConfig);
 
-/** Invalidate the config cache (call after admin updates) */
+async function _getHomepageNotice() {
+  const now = Date.now();
+  if (cachedHomepageNotice && now - homepageCacheTimestamp < CACHE_TTL) {
+    return cachedHomepageNotice;
+  }
+
+  const homepage = await prisma.homepageContent.findUnique({
+    where: { id: 1 },
+    select: { noticeBarText: true, noticeBarEnabled: true },
+  });
+
+  cachedHomepageNotice = {
+    noticeBarText: homepage?.noticeBarText ?? null,
+    noticeBarEnabled: homepage?.noticeBarEnabled ?? false,
+  };
+  homepageCacheTimestamp = now;
+  return cachedHomepageNotice;
+}
+
+/** Cached notice bar fetch used by layout. */
+export const getHomepageNotice = cache(_getHomepageNotice);
+
+/** Invalidate config and homepage cache (call after admin updates). */
 export function invalidateSiteConfig() {
   cachedConfig = null;
   cacheTimestamp = 0;
+  cachedHomepageNotice = null;
+  homepageCacheTimestamp = 0;
 }
 
 // Backward compatible alias

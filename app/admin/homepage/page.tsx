@@ -240,7 +240,7 @@ export default function HomepageManager() {
                 </div>
 
                 <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm relative">
-                    <p className="text-sm text-stone-500 mb-4">This image appears in the "Our Heritage" / "Brand Story" section on the homepage.</p>
+                    <p className="text-sm text-stone-500 mb-4">This image appears in the &quot;Our Heritage&quot; / &quot;Brand Story&quot; section on the homepage.</p>
                     <ImageUpload images={promotionalImages} onChange={setPromotionalImages} maxImages={1} />
                 </div>
             </section>

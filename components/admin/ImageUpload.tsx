@@ -3,6 +3,7 @@
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, X, Loader2, ImagePlus } from 'lucide-react';
+import Image from 'next/image';
 
 interface ImageUploadProps {
     images: string[];
@@ -121,7 +122,7 @@ export function ImageUpload({ images, onChange, maxImages = 5, folder = 'luxemoo
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                     {images.map((url, i) => (
                         <div key={i} className="relative group aspect-square rounded-xl overflow-hidden border border-stone-200 bg-stone-50">
-                            <img src={url} alt={`Upload ${i + 1}`} className="w-full h-full object-cover" />
+                            <Image src={url} alt={`Upload ${i + 1}`} fill sizes="(max-width: 768px) 50vw, 25vw" className="object-cover" />
                             <button
                                 type="button"
                                 onClick={() => removeImage(i)}

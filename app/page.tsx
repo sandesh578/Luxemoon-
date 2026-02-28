@@ -4,10 +4,14 @@ import { prisma } from '@/lib/prisma';
 import { HeroSlider } from '@/components/HeroSlider';
 import { ChevronRight, Star, ShieldCheck, Zap, ArrowRight } from 'lucide-react';
 import { QuickAddButton } from '@/components/QuickAddButton';
+import { translate } from '@/lib/i18n';
+import { getLocaleServer } from '@/lib/i18n-server';
 
-export const dynamic = "force-static";
+export const revalidate = 120;
 
 export default async function Home() {
+  const locale = await getLocaleServer();
+  const t = (key: string, vars?: Record<string, string | number>) => translate(locale, key, vars);
   const [content, featuredProducts, newArrivals, bestSellers, nanoplastiaProducts] = await Promise.all([
     prisma.homepageContent.findUnique({ where: { id: 1 } }),
     prisma.product.findMany({
@@ -35,22 +39,34 @@ export default async function Home() {
       orderBy: { orderItems: { _count: 'desc' } },
     }),
     prisma.product.findMany({
-      where: { isActive: true, isArchived: false, isDraft: false, category: { slug: 'nanoplastia-collection' } },
+      where: {
+        isActive: true,
+        isArchived: false,
+        isDraft: false,
+        slug: {
+          in: ['anti-hair-fall-shampoo', 'shining-silk-hair-mask', 'soft-silky-serum'],
+        },
+      },
       select: {
         id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, isNew: true, stock: true,
       },
       take: 3,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: 'asc' },
     }),
   ]);
+
+  const nanoplastiaOrder = ['anti-hair-fall-shampoo', 'shining-silk-hair-mask', 'soft-silky-serum'];
+  const orderedNanoplastiaProducts = [...nanoplastiaProducts].sort(
+    (a, b) => nanoplastiaOrder.indexOf(a.slug) - nanoplastiaOrder.indexOf(b.slug)
+  );
 
   const slides = (content?.heroSlides as any[]) || [
     {
       image: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=2574&auto=format&fit=crop",
-      title: "Rooted in Korea.",
-      subtitle: "Experience the glass-hair revolution. Professional Nanoplastia treatment formulated with premium botanicals.",
+      title: "Nano Botox 4-in-1",
+      subtitle: "Shampoo + Hair Mask + Hair Serum. Build stronger, smoother, shinier hair in a complete 3-step routine.",
       link: "/shop",
-      buttonText: "SHOP COLLECTION"
+      buttonText: "SHOP 3-STEP ROUTINE"
     }
   ];
 
@@ -62,10 +78,10 @@ export default async function Home() {
       {/* Trust Bar */}
       <div className="bg-stone-900 overflow-hidden py-6 border-y border-stone-800">
         <div className="max-w-7xl mx-auto px-4 flex flex-wrap justify-center md:justify-between items-center gap-8 md:gap-4">
-          <TrustItem icon={<Star className="w-4 h-4 text-amber-500" />} text="Premium Korean Formula" />
-          <TrustItem icon={<ShieldCheck className="w-4 h-4 text-amber-500" />} text="Dermatologically Tested" />
-          <TrustItem icon={<Zap className="w-4 h-4 text-amber-500" />} text="Instant Glass Finish" />
-          <TrustItem icon={<ShieldCheck className="w-4 h-4 text-amber-500" />} text="100% Authentic" />
+          <TrustItem icon={<Star className="w-4 h-4 text-amber-500" />} text={t('home.trustPremiumFormula')} />
+          <TrustItem icon={<ShieldCheck className="w-4 h-4 text-amber-500" />} text={t('home.trustDermTested')} />
+          <TrustItem icon={<Zap className="w-4 h-4 text-amber-500" />} text={t('home.trustGlassFinish')} />
+          <TrustItem icon={<ShieldCheck className="w-4 h-4 text-amber-500" />} text={t('home.trustAuthentic')} />
         </div>
       </div>
 
@@ -85,18 +101,16 @@ export default async function Home() {
           </div>
           <div className="space-y-8">
             <div className="space-y-4">
-              <span className="text-amber-600 font-bold tracking-[0.2em] text-xs uppercase">Our Heritage</span>
+              <span className="text-amber-600 font-bold tracking-[0.2em] text-xs uppercase">{t('home.heritageLabel')}</span>
               <h2 className="text-4xl md:text-5xl font-serif text-stone-900 leading-tight">
-                Honoring the Art of <br /><span className="italic text-amber-700">Korean Haircare.</span>
+                {t('home.heritageTitleLine1')} <br /><span className="italic text-amber-700">{t('home.heritageTitleLine2')}</span>
               </h2>
               <p className="text-stone-600 leading-relaxed text-lg">
-                Luxe Moon brings the sophisticated tradition of Korean beauty innovation to Nepal.
-                Our formulas combine ancient botanical wisdom with modern Nanoplastia technology,
-                delivering professional salon results in the comfort of your home.
+                {t('home.heritageBody')}
               </p>
             </div>
             <Link href="/about" className="group inline-flex items-center gap-2 font-bold text-stone-900 border-b-2 border-amber-600 pb-1 hover:text-amber-700 transition-colors">
-              Read Our Full Story <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              {t('home.readFullStory')} <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
         </div>
@@ -107,12 +121,12 @@ export default async function Home() {
         <section className="py-24 px-4 bg-stone-900 border-t border-stone-800 text-[#F6EFE7]">
           <div className="max-w-7xl mx-auto space-y-16">
             <div className="text-center space-y-4">
-              <span className="text-amber-500 font-bold tracking-[0.2em] text-xs uppercase animate-pulse">The Glass Hair Revolution</span>
-              <h2 className="text-4xl md:text-5xl font-serif">NEW — Nano Botox Nanoplastia</h2>
-              <p className="text-stone-400 max-w-lg mx-auto">Experience the intensive repair and supreme shine of our professional botanical formula.</p>
+              <span className="text-amber-500 font-bold tracking-[0.2em] text-xs uppercase animate-pulse">{t('home.nanoLabel')}</span>
+              <h2 className="text-4xl md:text-5xl font-serif">{t('home.nanoTitle')}</h2>
+              <p className="text-stone-400 max-w-lg mx-auto">{t('home.nanoSubtitle')}</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-              {nanoplastiaProducts.map((p) => (
+              {orderedNanoplastiaProducts.map((p) => (
                 <div key={p.id} className="group flex flex-col items-center text-center">
                   <Link href={`/products/${p.slug}`} className="w-full relative aspect-[4/5] rounded-3xl overflow-hidden bg-stone-800 mb-6 shadow-2xl block hover:-translate-y-2 transition-transform duration-500">
                     {p.images && p.images[0] && (
@@ -129,9 +143,9 @@ export default async function Home() {
                   </Link>
                   <h3 className="font-serif text-2xl text-white mb-2 group-hover:text-amber-500 transition-colors">{p.name}</h3>
                   <div className="flex items-center justify-center gap-3 mb-6">
-                    <span className="font-bold text-amber-500 text-lg">NPR {p.priceInside.toLocaleString()}</span>
+                    <span className="font-bold text-amber-500 text-lg">{t('common.currency')} {p.priceInside.toLocaleString()}</span>
                     {p.originalPrice && p.originalPrice > p.priceInside && (
-                      <span className="text-stone-500 line-through text-sm">NPR {p.originalPrice.toLocaleString()}</span>
+                      <span className="text-stone-500 line-through text-sm">{t('common.currency')} {p.originalPrice.toLocaleString()}</span>
                     )}
                   </div>
                   <div className="w-full max-w-xs opacity-0 -translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 pointer-events-none group-hover:pointer-events-auto">
@@ -141,8 +155,8 @@ export default async function Home() {
               ))}
             </div>
             <div className="text-center">
-              <Link href="/shop?category=nanoplastia-collection" className="inline-flex items-center gap-2 font-bold text-amber-500 border-b-2 border-amber-600/30 pb-1 hover:text-amber-400 transition-colors uppercase tracking-wider text-sm">
-                Shop Entire Collection <ArrowRight className="w-4 h-4" />
+              <Link href="/shop" className="inline-flex items-center gap-2 font-bold text-amber-500 border-b-2 border-amber-600/30 pb-1 hover:text-amber-400 transition-colors uppercase tracking-wider text-sm">
+                {t('home.shop3Step')} <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
           </div>
@@ -151,22 +165,34 @@ export default async function Home() {
 
       {/* Product Sections */}
       <ProductGrid
-        title="Featured Collections"
-        subtitle="Curated essentials for your ultimate hair transformation journey."
+        title={t('home.featuredTitle')}
+        subtitle={t('home.featuredSubtitle')}
         products={featuredProducts}
         href="/shop?filter=featured"
+        viewAllLabel={t('home.viewAll')}
+        offerLabel={t('home.offer')}
+        newLabel={t('home.newBadge')}
+        currencyLabel={t('common.currency')}
       />
       <ProductGrid
-        title="New Arrivals"
-        subtitle="The latest innovations in Korean haircare."
+        title={t('home.newTitle')}
+        subtitle={t('home.newSubtitle')}
         products={newArrivals}
         href="/shop?filter=new"
+        viewAllLabel={t('home.viewAll')}
+        offerLabel={t('home.offer')}
+        newLabel={t('home.newBadge')}
+        currencyLabel={t('common.currency')}
       />
       <ProductGrid
-        title="Best Sellers"
-        subtitle="Our most loved products by the community."
+        title={t('home.bestTitle')}
+        subtitle={t('home.bestSubtitle')}
         products={bestSellers}
         href="/shop?filter=bestsellers"
+        viewAllLabel={t('home.viewAll')}
+        offerLabel={t('home.offer')}
+        newLabel={t('home.newBadge')}
+        currencyLabel={t('common.currency')}
       />
 
       {/* Campaign Banners */}
@@ -189,7 +215,7 @@ export default async function Home() {
                     {banner.title && <h3 className="text-2xl md:text-3xl font-serif text-white leading-tight">{banner.title}</h3>}
                     {banner.link && (
                       <span className="inline-flex items-center gap-1 text-white text-sm font-bold border-b border-white pb-1 group-hover:gap-2 transition-all">
-                        Explore Now <ChevronRight className="w-4 h-4" />
+                        {t('home.exploreNow')} <ChevronRight className="w-4 h-4" />
                       </span>
                     )}
                   </div>
@@ -207,22 +233,22 @@ export default async function Home() {
             <div className="w-16 h-16 bg-amber-600/10 rounded-full flex items-center justify-center mx-auto mb-6">
               <Zap className="w-8 h-8 text-amber-500" />
             </div>
-            <h3 className="text-2xl font-serif">Quick Absorption</h3>
-            <p className="text-stone-400 leading-relaxed">Innovative formulas that penetrate deep into the hair shaft for instant results.</p>
+            <h3 className="text-2xl font-serif">{t('home.quickAbsorption')}</h3>
+            <p className="text-stone-400 leading-relaxed">{t('home.quickAbsorptionBody')}</p>
           </div>
           <div className="space-y-4">
             <div className="w-16 h-16 bg-amber-600/10 rounded-full flex items-center justify-center mx-auto mb-6">
               <ShieldCheck className="w-8 h-8 text-amber-500" />
             </div>
-            <h3 className="text-2xl font-serif">Clean Ingredients</h3>
-            <p className="text-stone-400 leading-relaxed">Free from harsh sulfates and parabens. Only the goodness of nature.</p>
+            <h3 className="text-2xl font-serif">{t('home.cleanIngredients')}</h3>
+            <p className="text-stone-400 leading-relaxed">{t('home.cleanIngredientsBody')}</p>
           </div>
           <div className="space-y-4">
             <div className="w-16 h-16 bg-amber-600/10 rounded-full flex items-center justify-center mx-auto mb-6">
               <Star className="w-8 h-8 text-amber-500" />
             </div>
-            <h3 className="text-2xl font-serif">Professional Care</h3>
-            <p className="text-stone-400 leading-relaxed">Salon-grade quality tested by professionals for guaranteed excellence.</p>
+            <h3 className="text-2xl font-serif">{t('home.professionalCare')}</h3>
+            <p className="text-stone-400 leading-relaxed">{t('home.professionalCareBody')}</p>
           </div>
         </div>
       </section>
@@ -239,7 +265,25 @@ function TrustItem({ icon, text }: { icon: React.ReactNode; text: string }) {
   );
 }
 
-function ProductGrid({ title, subtitle, products, href }: { title: string, subtitle: string, products: any[], href: string }) {
+function ProductGrid({
+  title,
+  subtitle,
+  products,
+  href,
+  viewAllLabel,
+  offerLabel,
+  newLabel,
+  currencyLabel,
+}: {
+  title: string,
+  subtitle: string,
+  products: any[],
+  href: string,
+  viewAllLabel: string,
+  offerLabel: string,
+  newLabel: string,
+  currencyLabel: string,
+}) {
   if (!products || products.length === 0) return null;
   return (
     <section className="py-24 px-4 bg-[#FDFCFB] border-t border-stone-100">
@@ -250,7 +294,7 @@ function ProductGrid({ title, subtitle, products, href }: { title: string, subti
             <p className="text-stone-500 max-w-lg">{subtitle}</p>
           </div>
           <Link href={href} prefetch={false} className="text-stone-900 font-bold hover:text-amber-600 transition-colors flex items-center gap-2">
-            View All <ChevronRight className="w-4 h-4" />
+            {viewAllLabel} <ChevronRight className="w-4 h-4" />
           </Link>
         </div>
 
@@ -271,20 +315,20 @@ function ProductGrid({ title, subtitle, products, href }: { title: string, subti
                   )}
                   {p.originalPrice && p.originalPrice > p.priceInside && (
                     <span className="absolute top-4 left-4 bg-amber-600 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm">
-                      OFFER
+                      {offerLabel.toUpperCase()}
                     </span>
                   )}
                   {p.isNew && (
                     <span className="absolute top-4 right-4 bg-stone-900 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm">
-                      NEW
+                      {newLabel.toUpperCase()}
                     </span>
                   )}
                 </div>
                 <h3 className="font-serif text-xl text-stone-900 mb-1 group-hover:text-amber-700 transition-colors">{p.name}</h3>
                 <div className="flex items-center gap-3">
-                  <span className="font-bold text-stone-900">NPR {p.priceInside.toLocaleString()}</span>
+                  <span className="font-bold text-stone-900">{currencyLabel} {p.priceInside.toLocaleString()}</span>
                   {p.originalPrice && p.originalPrice > p.priceInside && (
-                    <span className="text-stone-400 line-through text-xs">NPR {p.originalPrice.toLocaleString()}</span>
+                    <span className="text-stone-400 line-through text-xs">{currencyLabel} {p.originalPrice.toLocaleString()}</span>
                   )}
                 </div>
               </Link>

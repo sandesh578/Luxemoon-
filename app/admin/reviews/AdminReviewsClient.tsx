@@ -148,7 +148,7 @@ export default function AdminReviewsClient({ reviews }: { reviews: Review[] }) {
                                         ))}
                                         <span className="text-xs text-stone-400 ml-2">{new Date(r.createdAt).toLocaleDateString()}</span>
                                     </div>
-                                    <p className="text-sm text-stone-600 leading-relaxed italic">"{r.comment}"</p>
+                                    <p className="text-sm text-stone-600 leading-relaxed italic">&quot;{r.comment}&quot;</p>
 
                                     {/* Media Gallery */}
                                     {(r.images.length > 0 || r.video) && (

@@ -1,13 +1,15 @@
 'use client';
-import { Phone, Mail, MapPin, Instagram, Facebook } from 'lucide-react';
+import { Phone, Mail, MapPin, Instagram, Facebook, Music2 } from 'lucide-react';
 import Link from 'next/link';
 import { useConfig } from './Providers';
+import { useI18n } from './Providers';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { optimizeImage } from '@/lib/image';
 
 export const Footer = () => {
   const config = useConfig();
+  const { t } = useI18n();
   const pathname = usePathname();
 
   if (pathname.startsWith('/admin')) {
@@ -24,7 +26,7 @@ export const Footer = () => {
             <h3 className="font-serif text-2xl text-white">{config.storeName}</h3>
           )}
           <p className="text-sm font-light leading-relaxed text-stone-400 max-w-xs">
-            {config.footerContent || 'Premium Korean-origin haircare. Formulated with Biotin & Keratin to restore your hair\'s natural brilliance.'}
+            {config.footerContent || t('footer.defaultCopy')}
           </p>
           <div className="flex gap-4 pt-2">
             {config.instagramUrl ? (
@@ -37,31 +39,34 @@ export const Footer = () => {
             ) : (
               <Facebook className="w-5 h-5 hover:text-amber-500 cursor-pointer" />
             )}
+            {config.tiktokUrl ? (
+              <a href={config.tiktokUrl} target="_blank" rel="noopener noreferrer"><Music2 className="w-5 h-5 hover:text-amber-500 cursor-pointer" /></a>
+            ) : null}
           </div>
         </div>
 
         <div>
-          <h4 className="text-white font-bold mb-6 tracking-wide text-sm uppercase">Shop</h4>
+          <h4 className="text-white font-bold mb-6 tracking-wide text-sm uppercase">{t('footer.shop')}</h4>
           <ul className="space-y-3 text-sm">
-            <li><Link href="/shop" prefetch={false} className="hover:text-amber-500 transition-colors">All Products</Link></li>
-            <li><Link href="/shop" prefetch={false} className="hover:text-amber-500 transition-colors">Nanoplastia Kits</Link></li>
+            <li><Link href="/shop" prefetch={false} className="hover:text-amber-500 transition-colors">{t('footer.allProducts')}</Link></li>
+            <li><Link href="/shop" prefetch={false} className="hover:text-amber-500 transition-colors">{t('footer.nanoplastiaKits')}</Link></li>
           </ul>
         </div>
 
         <div>
-          <h4 className="text-white font-bold mb-6 tracking-wide text-sm uppercase">Support</h4>
+          <h4 className="text-white font-bold mb-6 tracking-wide text-sm uppercase">{t('footer.support')}</h4>
           <ul className="space-y-3 text-sm">
-            <li><Link href="/about" prefetch={false} className="hover:text-amber-500 transition-colors">Our Story</Link></li>
-            <li><Link href="/delivery-policy" prefetch={false} className="hover:text-amber-500 transition-colors">Delivery Policy</Link></li>
-            <li><Link href="/refund-policy" prefetch={false} className="hover:text-amber-500 transition-colors">Refund Policy</Link></li>
-            <li><Link href="/privacy" prefetch={false} className="hover:text-amber-500 transition-colors">Privacy Policy</Link></li>
-            <li><Link href="/terms" prefetch={false} className="hover:text-amber-500 transition-colors">Terms & Conditions</Link></li>
-            <li><Link href="/contact" prefetch={false} className="hover:text-amber-500 transition-colors">Contact Us</Link></li>
+            <li><Link href="/about" prefetch={false} className="hover:text-amber-500 transition-colors">{t('footer.ourStory')}</Link></li>
+            <li><Link href="/delivery-policy" prefetch={false} className="hover:text-amber-500 transition-colors">{t('footer.deliveryPolicy')}</Link></li>
+            <li><Link href="/refund-policy" prefetch={false} className="hover:text-amber-500 transition-colors">{t('footer.refundPolicy')}</Link></li>
+            <li><Link href="/privacy" prefetch={false} className="hover:text-amber-500 transition-colors">{t('footer.privacyPolicy')}</Link></li>
+            <li><Link href="/terms" prefetch={false} className="hover:text-amber-500 transition-colors">{t('footer.terms')}</Link></li>
+            <li><Link href="/contact" prefetch={false} className="hover:text-amber-500 transition-colors">{t('footer.contactUs')}</Link></li>
           </ul>
         </div>
 
         <div>
-          <h4 className="text-white font-bold mb-6 tracking-wide text-sm uppercase">Contact</h4>
+          <h4 className="text-white font-bold mb-6 tracking-wide text-sm uppercase">{t('footer.contact')}</h4>
           <ul className="space-y-4 text-sm">
             <li>
               <a href={`tel:${config.contactPhone?.replace(/[^0-9+]/g, '')}`} className="flex items-start gap-3 hover:text-amber-500 transition-colors group">
@@ -85,7 +90,7 @@ export const Footer = () => {
         </div>
       </div>
       <div className="max-w-7xl mx-auto mt-16 pt-8 border-t border-stone-800 text-center text-xs text-stone-500">
-        &copy; {new Date().getFullYear()} {config.storeName} Nepal. All rights reserved.
+        &copy; {new Date().getFullYear()} {config.storeName} Nepal. {t('footer.allRightsReserved')}
       </div>
     </footer>
   );

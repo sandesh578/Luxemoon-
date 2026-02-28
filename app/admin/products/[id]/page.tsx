@@ -23,6 +23,7 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<{ id: string; name: string }[]>([]);
   const [data, setData] = useState<any>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Dynamic Lists State
   const [features, setFeatures] = useState<string[]>(['']);
@@ -36,27 +37,41 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
   useEffect(() => {
     const load = async () => {
       try {
-        const [catRes, prodRes] = await Promise.all([
-          fetch('/api/categories').then(r => r.json()),
-          fetch('/api/products').then(r => r.json())
+        setLoadError(null);
+        const [catResp, listResp, productResp] = await Promise.all([
+          fetch('/api/categories'),
+          fetch('/api/products'),
+          fetch(`/api/products/${resolvedParams.id}`),
         ]);
+
+        const [catRes, prodRes, productRes] = await Promise.all([
+          catResp.json(),
+          listResp.json(),
+          productResp.json(),
+        ]);
+
+        if (!catResp.ok || !Array.isArray(catRes)) throw new Error('Failed to load categories');
+        if (!listResp.ok || !Array.isArray(prodRes)) throw new Error('Failed to load products');
 
         setCategories(catRes);
         setProducts(prodRes);
-        const p = prodRes.find((x: any) => x.id === resolvedParams.id);
-        if (p) {
-          setData(p);
-          setFeatures(p.features?.length ? p.features : ['']);
-          setBenefits(p.benefits?.length ? p.benefits : ['']);
-          setFaqs(p.faqs || []);
-          setTags(p.tags || []);
-          setComparisonImages(p.comparisonImages || []);
-          setBundleItemIds(p.bundleItemIds || []);
-        } else {
+
+        if (!productResp.ok || !productRes) {
+          setLoadError('Product not found');
           toast.error('Product not found');
           router.push('/admin/products');
+          return;
         }
+
+        setData(productRes);
+        setFeatures(productRes.features?.length ? productRes.features : ['']);
+        setBenefits(productRes.benefits?.length ? productRes.benefits : ['']);
+        setFaqs(Array.isArray(productRes.faqs) ? productRes.faqs : []);
+        setTags(productRes.tags || []);
+        setComparisonImages(productRes.comparisonImages || []);
+        setBundleItemIds(productRes.bundleItemIds || []);
       } catch (e) {
+        setLoadError('Failed to load product data');
         toast.error('Failed to load data');
       } finally {
         setFetching(false);
@@ -114,6 +129,18 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
   const removeFaq = (i: number) => setFaqs(prev => prev.filter((_, idx) => idx !== i));
 
   if (fetching) return <div className="flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-stone-400" /></div>;
+
+  if (!data) {
+    return (
+      <div className="max-w-3xl bg-white border border-stone-200 rounded-xl p-6">
+        <h1 className="text-xl font-serif font-bold text-stone-900 mb-2">Unable to load product</h1>
+        <p className="text-sm text-stone-500 mb-4">{loadError || 'This product may have been removed.'}</p>
+        <Link href="/admin/products" className="inline-flex items-center gap-1 text-sm font-bold text-stone-800 hover:text-stone-900">
+          <ArrowLeft className="w-4 h-4" /> Back to Products
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl pb-20">

@@ -6,9 +6,9 @@ import { Providers } from "@/components/Providers";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { FloatingWhatsApp } from "@/components/FloatingWhatsApp";
-import { getSiteConfig } from "@/lib/settings";
-import { prisma } from "@/lib/prisma";
+import { getHomepageNotice, getSiteConfig } from "@/lib/settings";
 import { validateServerEnv } from "@/lib/env";
+import { getLocaleServer } from "@/lib/i18n-server";
 
 validateServerEnv();
 
@@ -23,35 +23,45 @@ const lato = Lato({
   variable: "--font-sans"
 });
 
-export const metadata: Metadata = {
-  title: "Luxe Moon | Rooted in Korea. Created for the World.",
-  description: "Premium Korean-origin haircare eCommerce platform.",
-  metadataBase: new URL('https://luxemoon.com.np'),
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const [config, locale] = await Promise.all([getSiteConfig(), getLocaleServer()]);
+  const metadataBase = process.env.NEXT_PUBLIC_SITE_URL || "https://luxemoon.com.np";
+
+  return {
+    title: config.metaTitle || (locale === 'ne' ? `${config.storeName} | नानो बोटक्स 4-in-1 हेयरकेयर` : `${config.storeName} | Nano Botox 4-in-1 Haircare`),
+    description:
+      config.metaDescription ||
+      (locale === 'ne'
+        ? "LuxeMoon Nano Botox 4-in-1 हेयरकेयर प्रणाली: Anti-Hair Fall Shampoo, Shining Silk Hair Mask, र Soft & Silky Hair Serum।"
+        : "LuxeMoon Nano Botox 4-in-1 haircare system: Anti-Hair Fall Shampoo, Shining Silk Hair Mask, and Soft & Silky Hair Serum."),
+    metadataBase: new URL(metadataBase),
+  };
+}
 
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [rawConfig, homepageContent] = await Promise.all([
+  const [rawConfig, noticeBar] = await Promise.all([
     getSiteConfig(),
-    prisma.homepageContent.findUnique({ where: { id: 1 } })
+    getHomepageNotice(),
   ]);
+  const locale = await getLocaleServer();
 
   // Serialize Date fields to strings for the client component
   const config = {
     ...rawConfig,
     globalDiscountStart: rawConfig.globalDiscountStart?.toISOString() ?? null,
     globalDiscountEnd: rawConfig.globalDiscountEnd?.toISOString() ?? null,
-    noticeBarText: homepageContent?.noticeBarText,
-    noticeBarEnabled: homepageContent?.noticeBarEnabled,
+    noticeBarText: noticeBar.noticeBarText,
+    noticeBarEnabled: noticeBar.noticeBarEnabled,
   };
 
   return (
-    <html lang="en">
+    <html lang={locale}>
       <body className={`${playfair.variable} ${lato.variable} font-sans bg-[#F6EFE7] text-[#5C3A21]`}>
-        <Providers config={config}>
+        <Providers config={config} initialLocale={locale}>
           <Navbar />
           <main className="min-h-screen">
             {children}

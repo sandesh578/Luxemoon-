@@ -3,14 +3,16 @@ import Link from 'next/link';
 import { Menu, ShoppingBag, ArrowRight } from 'lucide-react';
 import Image from 'next/image';
 import { optimizeImage } from '@/lib/image';
-import { useCart, useConfig } from './Providers';
+import { useCart, useConfig, useI18n } from './Providers';
 import { CartDrawer } from './CartDrawer';
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
+import { LanguageSwitcher } from './LanguageSwitcher';
 
 export const Navbar = () => {
   const { items, setIsCartOpen, cartTotal } = useCart();
   const rawConfig = useConfig();
+  const { t } = useI18n();
   const config = rawConfig as import('./Providers').SiteConfig;
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
@@ -26,7 +28,7 @@ export const Navbar = () => {
         {config.noticeBarEnabled && config.noticeBarText && (
           <div className="bg-stone-900 text-amber-50 text-[10px] md:text-sm font-bold tracking-widest text-center py-2.5 px-4 uppercase animate-fade-in">
             <span className="inline-flex gap-2 items-center">
-              ✨ {config.noticeBarText} ✨
+              {config.noticeBarText}
             </span>
           </div>
         )}
@@ -44,20 +46,23 @@ export const Navbar = () => {
                   ) : (
                     <div className="flex flex-col">
                       <h1 className="font-serif text-2xl font-bold text-stone-900 tracking-tighter uppercase">{config.storeName}</h1>
-                      <span className="text-[9px] tracking-[0.25em] uppercase text-amber-700 font-bold">Rooted in Korea</span>
+                      <span className="text-[9px] tracking-[0.25em] uppercase text-amber-700 font-bold">{t('nav.rootedInKorea')}</span>
                     </div>
                   )}
                 </Link>
               </div>
 
               <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-stone-600 tracking-wide">
-                <Link href="/" prefetch={false} className="hover:text-amber-700 transition-colors">HOME</Link>
-                <Link href="/shop" prefetch={false} className="hover:text-amber-700 transition-colors">SHOP</Link>
-                <Link href="/about" prefetch={false} className="hover:text-amber-700 transition-colors">OUR STORY</Link>
-                <Link href="/contact" prefetch={false} className="hover:text-amber-700 transition-colors">CONTACT</Link>
+                <Link href="/" prefetch={false} className="hover:text-amber-700 transition-colors">{t('nav.home').toUpperCase()}</Link>
+                <Link href="/shop" prefetch={false} className="hover:text-amber-700 transition-colors">{t('nav.shop').toUpperCase()}</Link>
+                <Link href="/about" prefetch={false} className="hover:text-amber-700 transition-colors">{t('nav.ourStory').toUpperCase()}</Link>
+                <Link href="/contact" prefetch={false} className="hover:text-amber-700 transition-colors">{t('nav.contact').toUpperCase()}</Link>
               </div>
 
               <div className="flex items-center gap-6">
+                <div className="hidden sm:block">
+                  <LanguageSwitcher />
+                </div>
 
                 <button onClick={() => setIsCartOpen(true)} className="relative group">
                   <div className="p-2 text-stone-800 group-hover:text-amber-700 transition-colors">
@@ -75,10 +80,13 @@ export const Navbar = () => {
 
           {mobileOpen && (
             <div className="md:hidden bg-[#F6EFE7] border-b border-amber-900/10 p-4 space-y-4 shadow-xl">
-              <Link href="/" onClick={() => setMobileOpen(false)} className="block font-serif text-xl">Home</Link>
-              <Link href="/shop" onClick={() => setMobileOpen(false)} className="block font-serif text-xl">Shop</Link>
-              <Link href="/about" onClick={() => setMobileOpen(false)} className="block font-serif text-xl">Our Story</Link>
-              <Link href="/contact" onClick={() => setMobileOpen(false)} className="block font-serif text-xl">Contact</Link>
+              <Link href="/" onClick={() => setMobileOpen(false)} className="block font-serif text-xl">{t('nav.home')}</Link>
+              <Link href="/shop" onClick={() => setMobileOpen(false)} className="block font-serif text-xl">{t('nav.shop')}</Link>
+              <Link href="/about" onClick={() => setMobileOpen(false)} className="block font-serif text-xl">{t('nav.ourStory')}</Link>
+              <Link href="/contact" onClick={() => setMobileOpen(false)} className="block font-serif text-xl">{t('nav.contact')}</Link>
+              <div className="pt-2">
+                <LanguageSwitcher />
+              </div>
             </div>
           )}
         </nav>
@@ -93,10 +101,10 @@ export const Navbar = () => {
             className="w-full py-3.5 bg-stone-900 text-white font-bold rounded-xl flex items-center justify-between px-5 shadow-2xl border border-stone-800 animate-slide-in-bottom"
           >
             <span className="flex items-center gap-2 text-sm tracking-wide">
-              <ShoppingBag className="w-4 h-4" /> {itemCount} item{itemCount > 1 ? 's' : ''}
+              <ShoppingBag className="w-4 h-4" /> {itemCount} {itemCount > 1 ? t('common.items') : t('common.item')}
             </span>
             <span className="flex items-center gap-2 text-sm">
-              NPR {cartTotal.toLocaleString()} <ArrowRight className="w-4 h-4 ml-1" />
+              {t('common.currency')} {cartTotal.toLocaleString()} <ArrowRight className="w-4 h-4 ml-1" />
             </span>
           </button>
         </div>

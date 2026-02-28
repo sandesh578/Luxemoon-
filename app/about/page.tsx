@@ -1,14 +1,18 @@
 import { getSiteConfig } from '@/lib/settings';
 import DOMPurify from 'isomorphic-dompurify';
+import { translate } from '@/lib/i18n';
+import { getLocaleServer } from '@/lib/i18n-server';
 
 export const revalidate = 60;
 
 export default async function AboutPage() {
+  const locale = await getLocaleServer();
+  const t = (key: string, vars?: Record<string, string | number>) => translate(locale, key, vars);
   const config = await getSiteConfig();
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-16 min-h-screen">
-      <h1 className="font-serif text-4xl font-bold text-stone-900 mb-8">Our Story</h1>
+      <h1 className="font-serif text-4xl font-bold text-stone-900 mb-8">{t('about.title')}</h1>
       {config.aboutContent ? (
         <div
           className="prose-sm sm:prose-base max-w-none text-stone-600 prose-headings:font-serif prose-headings:text-stone-900 prose-a:text-amber-600"
@@ -17,16 +21,16 @@ export default async function AboutPage() {
       ) : (
         <div className="space-y-8 text-stone-600 leading-relaxed">
           <p className="text-lg">
-            <strong className="text-stone-900">Luxe Moon</strong> was born from a simple belief: everyone deserves access to world-class haircare, no matter where they are.
+            {t('about.fallbackP1')}
           </p>
           <p>
-            We source the finest Korean haircare formulations — enriched with Biotin, Keratin, and natural botanicals — and bring them directly to Nepal.
+            {t('about.fallbackP2')}
           </p>
           <p>
-            Our products are carefully selected for their proven efficacy, premium ingredients, and salon-grade results that you can achieve at home.
+            {t('about.fallbackP3')}
           </p>
           <div className="bg-amber-50 border border-amber-100 rounded-xl p-8 text-center">
-            <p className="font-serif text-2xl text-stone-900">&quot;Rooted in Korea. Created for the World.&quot;</p>
+            <p className="font-serif text-2xl text-stone-900">&quot;{t('about.quote')}&quot;</p>
           </div>
         </div>
       )}

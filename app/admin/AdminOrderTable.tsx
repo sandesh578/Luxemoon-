@@ -78,7 +78,7 @@ export const AdminOrderTable = ({ orders }: { orders: Order[] }) => {
       );
     }
     return result;
-  }, [orders, statusFilter, search]);
+  }, [orders, statusFilter, search, startDate, endDate]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
