@@ -1,5 +1,5 @@
 import { getSiteConfig } from '@/lib/settings';
-import DOMPurify from 'isomorphic-dompurify';
+import { sanitizeAdminHtml } from '@/lib/sanitize-admin-html';
 
 export const revalidate = 60;
 
@@ -14,7 +14,7 @@ export default async function DeliveryPolicyPage() {
                 <p className="text-stone-400 mt-4 max-w-lg mx-auto">How we get Luxe Moon products to your doorstep.</p>
             </section>
             <div className="max-w-4xl mx-auto px-4 py-16">
-                <div className="prose-sm sm:prose-base max-w-none text-stone-600 prose-headings:font-serif prose-headings:text-stone-900 prose-a:text-amber-600" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }} />
+                <div className="prose-sm sm:prose-base max-w-none text-stone-600 prose-headings:font-serif prose-headings:text-stone-900 prose-a:text-amber-600" dangerouslySetInnerHTML={{ __html: sanitizeAdminHtml(content) }} />
             </div>
         </div>
     );

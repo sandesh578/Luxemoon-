@@ -1,7 +1,7 @@
 import { getSiteConfig } from '@/lib/settings';
-import DOMPurify from 'isomorphic-dompurify';
 import { translate } from '@/lib/i18n';
 import { getLocaleServer } from '@/lib/i18n-server';
+import { sanitizeAdminHtml } from '@/lib/sanitize-admin-html';
 
 export const revalidate = 60;
 
@@ -16,7 +16,7 @@ export default async function AboutPage() {
       {config.aboutContent ? (
         <div
           className="prose-sm sm:prose-base max-w-none text-stone-600 prose-headings:font-serif prose-headings:text-stone-900 prose-a:text-amber-600"
-          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(config.aboutContent) }}
+          dangerouslySetInnerHTML={{ __html: sanitizeAdminHtml(config.aboutContent) }}
         />
       ) : (
         <div className="space-y-8 text-stone-600 leading-relaxed">

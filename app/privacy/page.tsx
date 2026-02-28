@@ -1,5 +1,5 @@
 import { getSiteConfig } from '@/lib/settings';
-import DOMPurify from 'isomorphic-dompurify';
+import { sanitizeAdminHtml } from '@/lib/sanitize-admin-html';
 
 export const revalidate = 60;
 
@@ -12,7 +12,7 @@ export default async function PrivacyPage() {
             {config.privacyPolicy ? (
                 <div
                     className="prose-sm sm:prose-base max-w-none text-stone-600 prose-headings:font-serif prose-headings:text-stone-900 prose-a:text-amber-600"
-                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(config.privacyPolicy) }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeAdminHtml(config.privacyPolicy) }}
                 />
             ) : (
                 <div className="space-y-6 text-stone-600 leading-relaxed">
