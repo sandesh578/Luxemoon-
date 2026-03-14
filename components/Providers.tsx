@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { type Locale, LOCALE_COOKIE_NAME, translate } from '@/lib/i18n';
+import { DEFAULT_LOCALE, type Locale, LOCALE_COOKIE_NAME, isLocale, translate } from '@/lib/i18n';
 
 // Types
 export interface Product {
@@ -124,6 +124,21 @@ export const Providers = ({
     }
     setHydrated(true);
   }, []);
+
+  useEffect(() => {
+    const cookieLocale = document.cookie
+      .split('; ')
+      .find((entry) => entry.startsWith(`${LOCALE_COOKIE_NAME}=`))
+      ?.split('=')[1];
+
+    if (isLocale(cookieLocale) && cookieLocale !== locale) {
+      setLocaleState(cookieLocale);
+      document.documentElement.lang = cookieLocale;
+      return;
+    }
+
+    document.documentElement.lang = initialLocale || DEFAULT_LOCALE;
+  }, [initialLocale, locale]);
 
   useEffect(() => {
     if (hydrated) localStorage.setItem('lm_cart', JSON.stringify(items));

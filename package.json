@@ -1,51 +1,53 @@
 {
-  "name": "luxe-moon-next",
-  "version": "1.0.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "typecheck": "tsc --noEmit",
-    "seed": "ts-node --compiler-options \"{\\\"module\\\":\\\"CommonJS\\\"}\" prisma/seed.ts",
-    "seed:premium": "ts-node --compiler-options \"{\\\"module\\\":\\\"CommonJS\\\"}\" scripts/seed-premium.ts",
-    "test": "ts-node --compiler-options \"{\\\"module\\\":\\\"CommonJS\\\"}\" tests/review-validation.test.ts",
-    "postinstall": "prisma generate"
-  },
-  "prisma": {
-    "seed": "ts-node --compiler-options \"{\\\"module\\\":\\\"CommonJS\\\"}\" prisma/seed.ts"
-  },
-  "dependencies": {
-    "@prisma/client": "^6.3.0",
-    "@tailwindcss/typography": "^0.5.19",
-    "@tiptap/extension-link": "^3.20.0",
-    "@tiptap/react": "^3.20.0",
-    "@tiptap/starter-kit": "^3.20.0",
-    "cloudinary": "^2.9.0",
-    "isomorphic-dompurify": "^3.0.0",
-    "jose": "^5.2.0",
-    "lucide-react": "^0.575.0",
-    "next": "^15.5.9",
-    "next-cloudinary": "^6.17.5",
-    "react": "^19.2.1",
-    "react-dom": "^19.2.1",
-    "react-dropzone": "^15.0.0",
-    "resend": "^3.1.0",
-    "sonner": "^2.0.7",
-    "zod": "^3.22.4"
-  },
-  "devDependencies": {
-    "@types/node": "^20.11.16",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "autoprefixer": "^10.4.17",
-    "eslint": "^8.56.0",
-    "eslint-config-next": "^15.5.9",
-    "postcss": "^8.4.33",
-    "prisma": "^6.3.0",
-    "tailwindcss": "^3.4.1",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.3.3"
-  }
+    "name":  "luxe-moon-next",
+    "version":  "1.0.0",
+    "private":  true,
+    "scripts":  {
+                    "dev":  "next dev",
+                    "build":  "next build",
+                    "start":  "next start",
+                    "lint":  "next lint",
+                    "typecheck":  "tsc --noEmit",
+                    "test:unit":  "ts-node --compiler-options \"{\\\"module\\\":\\\"CommonJS\\\"}\" tests/review-validation.test.ts",
+                    "test:smoke":  "node -e \"const assert=require(\u0027node:assert/strict\u0027); const base=process.env.TEST_BASE_URL||\u0027http://127.0.0.1:3000\u0027; const expectStatus=async(path,status)=\u003e{ const res=await fetch(base+path,{redirect:\u0027manual\u0027,headers:{\u0027cache-control\u0027:\u0027no-cache\u0027}}); assert.equal(res.status,status,`${path} returned ${res.status} instead of ${status}`); return res; }; (async()=\u003e{ const home=await expectStatus(\u0027/\u0027,200); const homeHtml=await home.text(); assert.equal(homeHtml.includes(\u0027Luxe Moon\u0027),true,\u0027home page did not render expected brand text\u0027); await expectStatus(\u0027/shop\u0027,200); await expectStatus(\u0027/about\u0027,200); await expectStatus(\u0027/api/settings\u0027,200); await expectStatus(\u0027/api/products\u0027,200); await expectStatus(\u0027/api/categories\u0027,200); const badContact=await fetch(base+\u0027/api/contact\u0027,{method:\u0027POST\u0027,headers:{\u0027content-type\u0027:\u0027application/json\u0027},body:JSON.stringify({})}); assert.equal(badContact.status,400,`/api/contact returned ${badContact.status} instead of 400`); const badOrder=await fetch(base+\u0027/api/orders\u0027,{method:\u0027POST\u0027,headers:{\u0027content-type\u0027:\u0027application/json\u0027},body:JSON.stringify({})}); assert.equal(badOrder.status,400,`/api/orders returned ${badOrder.status} instead of 400`); console.log(`smoke integration checks passed against ${base}`); })().catch(err=\u003e{ console.error(err); process.exit(1); });\"",
+                    "seed":  "ts-node --compiler-options \"{\\\"module\\\":\\\"CommonJS\\\"}\" prisma/seed.ts",
+                    "seed:premium":  "ts-node --compiler-options \"{\\\"module\\\":\\\"CommonJS\\\"}\" scripts/seed-premium.ts",
+                    "test":  "npm run test:unit",
+                    "postinstall":  "prisma generate"
+                },
+    "prisma":  {
+                   "seed":  "ts-node --compiler-options \"{\\\"module\\\":\\\"CommonJS\\\"}\" prisma/seed.ts"
+               },
+    "dependencies":  {
+                         "@prisma/client":  "^6.3.0",
+                         "@tailwindcss/typography":  "^0.5.19",
+                         "@tiptap/extension-link":  "^3.20.0",
+                         "@tiptap/react":  "^3.20.0",
+                         "@tiptap/starter-kit":  "^3.20.0",
+                         "cloudinary":  "^2.9.0",
+                         "isomorphic-dompurify":  "^3.0.0",
+                         "jose":  "^5.2.0",
+                         "lucide-react":  "^0.575.0",
+                         "next":  "^15.5.9",
+                         "next-cloudinary":  "^6.17.5",
+                         "react":  "^19.2.1",
+                         "react-dom":  "^19.2.1",
+                         "react-dropzone":  "^15.0.0",
+                         "resend":  "^3.1.0",
+                         "sonner":  "^2.0.7",
+                         "zod":  "^3.22.4"
+                     },
+    "devDependencies":  {
+                            "@types/node":  "^20.11.16",
+                            "@types/react":  "^19.0.0",
+                            "@types/react-dom":  "^19.0.0",
+                            "autoprefixer":  "^10.4.17",
+                            "eslint":  "^8.56.0",
+                            "eslint-config-next":  "^15.5.9",
+                            "postcss":  "^8.4.33",
+                            "prisma":  "^6.3.0",
+                            "tailwindcss":  "^3.4.1",
+                            "ts-node":  "^10.9.2",
+                            "typescript":  "^5.3.3"
+                        }
 }

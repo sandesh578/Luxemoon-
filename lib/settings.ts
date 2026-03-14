@@ -1,13 +1,7 @@
 import { prisma } from "./prisma";
-import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import { SiteConfig } from "@prisma/client";
 
-// In-memory TTL cache for SiteConfig and homepage notice content.
-let cachedConfig: SiteConfig | null = null;
-let cacheTimestamp = 0;
-let cachedHomepageNotice: { noticeBarText: string | null; noticeBarEnabled: boolean } | null = null;
-let homepageCacheTimestamp = 0;
-const CACHE_TTL = 300_000; // 5 minutes
 const DEFAULT_SITE_CONFIG: SiteConfig = {
   id: 1,
   storeName: "Luxe Moon",
@@ -45,86 +39,101 @@ const DEFAULT_SITE_CONFIG: SiteConfig = {
   smsNotificationsEnabled: false,
 };
 
-async function _getSiteConfig() {
-  const now = Date.now();
-  if (cachedConfig && now - cacheTimestamp < CACHE_TTL) {
-    return cachedConfig;
-  }
+const SITE_CONFIG_CREATE_DATA = {
+  id: DEFAULT_SITE_CONFIG.id,
+  storeName: DEFAULT_SITE_CONFIG.storeName,
+  bannerText: DEFAULT_SITE_CONFIG.bannerText,
+  logoUrl: DEFAULT_SITE_CONFIG.logoUrl,
+  faviconUrl: DEFAULT_SITE_CONFIG.faviconUrl,
+  deliveryChargeInside: DEFAULT_SITE_CONFIG.deliveryChargeInside,
+  deliveryChargeOutside: DEFAULT_SITE_CONFIG.deliveryChargeOutside,
+  freeDeliveryThreshold: DEFAULT_SITE_CONFIG.freeDeliveryThreshold,
+  codFee: DEFAULT_SITE_CONFIG.codFee,
+  expressDeliveryEnabled: DEFAULT_SITE_CONFIG.expressDeliveryEnabled,
+  estimatedDeliveryInside: DEFAULT_SITE_CONFIG.estimatedDeliveryInside,
+  estimatedDeliveryOutside: DEFAULT_SITE_CONFIG.estimatedDeliveryOutside,
+  globalDiscountPercent: DEFAULT_SITE_CONFIG.globalDiscountPercent,
+  globalDiscountStart: DEFAULT_SITE_CONFIG.globalDiscountStart,
+  globalDiscountEnd: DEFAULT_SITE_CONFIG.globalDiscountEnd,
+  allowStacking: DEFAULT_SITE_CONFIG.allowStacking,
+  festiveSaleEnabled: DEFAULT_SITE_CONFIG.festiveSaleEnabled,
+  contactPhone: DEFAULT_SITE_CONFIG.contactPhone,
+  contactEmail: DEFAULT_SITE_CONFIG.contactEmail,
+  contactAddress: DEFAULT_SITE_CONFIG.contactAddress,
+  whatsappNumber: DEFAULT_SITE_CONFIG.whatsappNumber,
+  facebookUrl: DEFAULT_SITE_CONFIG.facebookUrl,
+  instagramUrl: DEFAULT_SITE_CONFIG.instagramUrl,
+  tiktokUrl: DEFAULT_SITE_CONFIG.tiktokUrl,
+  metaTitle: DEFAULT_SITE_CONFIG.metaTitle,
+  metaDescription: DEFAULT_SITE_CONFIG.metaDescription,
+  footerContent: DEFAULT_SITE_CONFIG.footerContent,
+  privacyPolicy: DEFAULT_SITE_CONFIG.privacyPolicy,
+  termsConditions: DEFAULT_SITE_CONFIG.termsConditions,
+  aboutContent: DEFAULT_SITE_CONFIG.aboutContent,
+  deliveryPolicy: DEFAULT_SITE_CONFIG.deliveryPolicy,
+  refundPolicy: DEFAULT_SITE_CONFIG.refundPolicy,
+  emailNotificationsEnabled: DEFAULT_SITE_CONFIG.emailNotificationsEnabled,
+  smsNotificationsEnabled: DEFAULT_SITE_CONFIG.smsNotificationsEnabled,
+};
 
-  let config: SiteConfig | null = null;
-
-  try {
-    config = await prisma.siteConfig.findFirst();
-
-    if (!config) {
-      config = await prisma.siteConfig.create({
-        data: {
-          storeName: DEFAULT_SITE_CONFIG.storeName,
-          bannerText: DEFAULT_SITE_CONFIG.bannerText,
-          deliveryChargeInside: DEFAULT_SITE_CONFIG.deliveryChargeInside,
-          deliveryChargeOutside: DEFAULT_SITE_CONFIG.deliveryChargeOutside,
-          freeDeliveryThreshold: DEFAULT_SITE_CONFIG.freeDeliveryThreshold,
-          codFee: DEFAULT_SITE_CONFIG.codFee,
-          expressDeliveryEnabled: DEFAULT_SITE_CONFIG.expressDeliveryEnabled,
-          estimatedDeliveryInside: DEFAULT_SITE_CONFIG.estimatedDeliveryInside,
-          estimatedDeliveryOutside: DEFAULT_SITE_CONFIG.estimatedDeliveryOutside,
-          contactPhone: DEFAULT_SITE_CONFIG.contactPhone,
-          contactEmail: DEFAULT_SITE_CONFIG.contactEmail,
-          contactAddress: DEFAULT_SITE_CONFIG.contactAddress,
-          emailNotificationsEnabled: DEFAULT_SITE_CONFIG.emailNotificationsEnabled,
-          smsNotificationsEnabled: DEFAULT_SITE_CONFIG.smsNotificationsEnabled,
-          globalDiscountPercent: DEFAULT_SITE_CONFIG.globalDiscountPercent,
-        },
-      });
-    }
-  } catch {
-    // During build or temporary DB outages, keep rendering with safe defaults.
-    config = DEFAULT_SITE_CONFIG;
-  }
-
-  cachedConfig = config;
-  cacheTimestamp = now;
-  return config;
+async function getOrCreateSiteConfig() {
+  return prisma.siteConfig.upsert({
+    where: { id: DEFAULT_SITE_CONFIG.id },
+    update: {},
+    create: SITE_CONFIG_CREATE_DATA,
+  });
 }
 
-/** React cache()-wrapped export that deduplicates within a single render pass. */
-export const getSiteConfig = cache(_getSiteConfig);
+async function _getSiteConfig() {
+  try {
+    return await getOrCreateSiteConfig();
+  } catch {
+    return DEFAULT_SITE_CONFIG;
+  }
+}
+
+export const getSiteConfig = unstable_cache(
+  async () => _getSiteConfig(),
+  ["site-config"],
+  { revalidate: 300, tags: ["config"] }
+);
+
+export async function getSiteConfigForAdmin() {
+  return getOrCreateSiteConfig();
+}
 
 async function _getHomepageNotice() {
-  const now = Date.now();
-  if (cachedHomepageNotice && now - homepageCacheTimestamp < CACHE_TTL) {
-    return cachedHomepageNotice;
-  }
-
   try {
     const homepage = await prisma.homepageContent.findUnique({
       where: { id: 1 },
       select: { noticeBarText: true, noticeBarEnabled: true },
     });
 
-    cachedHomepageNotice = {
+    return {
       noticeBarText: homepage?.noticeBarText ?? null,
       noticeBarEnabled: homepage?.noticeBarEnabled ?? false,
     };
   } catch {
-    cachedHomepageNotice = {
+    return {
       noticeBarText: null,
       noticeBarEnabled: false,
     };
   }
-  homepageCacheTimestamp = now;
-  return cachedHomepageNotice;
 }
 
 /** Cached notice bar fetch used by layout. */
-export const getHomepageNotice = cache(_getHomepageNotice);
+export const getHomepageNotice = unstable_cache(
+  async () => _getHomepageNotice(),
+  ["homepage-notice"],
+  { revalidate: 300, tags: ["homepage"] }
+);
+
+import { revalidateTag } from 'next/cache';
 
 /** Invalidate config and homepage cache (call after admin updates). */
 export function invalidateSiteConfig() {
-  cachedConfig = null;
-  cacheTimestamp = 0;
-  cachedHomepageNotice = null;
-  homepageCacheTimestamp = 0;
+  revalidateTag('config');
+  revalidateTag('homepage');
 }
 
 // Backward compatible alias
@@ -164,13 +173,9 @@ export function calculateDiscountedPrice(
   let price = basePrice;
   let hasProductDiscount = false;
 
-  // 1. Product-level discount
+  // 1. Product-level discount check (discount is already baked into basePrice in the DB)
   if (isDiscountActive(product.discountStart, product.discountEnd)) {
-    if (product.discountFixed && product.discountFixed > 0) {
-      price = Math.max(0, price - product.discountFixed);
-      hasProductDiscount = true;
-    } else if (product.discountPercent > 0) {
-      price = Math.round(price * (1 - product.discountPercent / 100));
+    if ((product.discountFixed && product.discountFixed > 0) || (product.discountPercent && product.discountPercent > 0)) {
       hasProductDiscount = true;
     }
   }

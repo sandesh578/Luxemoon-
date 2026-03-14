@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { sendOrderStatusNotification } from "@/lib/notifications";
 import { logger } from "@/lib/logger";
 import { verifyAdmin } from "@/lib/auth";
-import { invalidateSiteConfig } from "@/lib/settings";
+import { invalidateSiteConfig, getSiteConfigForAdmin } from "@/lib/settings";
 
 // --- ORDER ACTIONS ---
 
@@ -130,9 +130,14 @@ export async function updateSiteConfig(data: Record<string, unknown>): Promise<{
     if (field in data) updateData[field] = data[field] ? new Date(String(data[field])) : null;
   }
 
-  await prisma.siteConfig.update({
+  await prisma.siteConfig.upsert({
     where: { id: 1 },
-    data: updateData,
+    update: updateData,
+    create: {
+      ...(await getSiteConfigForAdmin()),
+      ...updateData,
+      id: 1,
+    },
   });
 
   invalidateSiteConfig();
@@ -220,16 +225,29 @@ export async function deleteCategory(id: string): Promise<{ success: boolean; er
 
 export async function createProduct(data: Record<string, unknown>): Promise<{ success: boolean }> {
   await verifyAdmin();
+  const config = await prisma.siteConfig.findUnique({ where: { id: 1 } });
   const name = String(data.name || '');
   const slug = name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+
+  let priceInside = Number(data.priceInside) || 0;
+  let priceOutside = Number(data.priceOutside) || 0;
+
+  const originalPrice = data.originalPrice ? Number(data.originalPrice) : null;
+  const discountPercent = Number(data.discountPercent) || 0;
+
+  if (originalPrice && discountPercent > 0) {
+    const baseDiscounted = Math.round(originalPrice * (1 - discountPercent / 100));
+    priceInside = baseDiscounted + (config?.deliveryChargeInside || 0);
+    priceOutside = baseDiscounted + (config?.deliveryChargeOutside || 150);
+  }
 
   await prisma.product.create({
     data: {
       slug,
       name,
       description: String(data.description || ''),
-      priceInside: Number(data.priceInside) || 0,
-      priceOutside: Number(data.priceOutside) || 0,
+      priceInside,
+      priceOutside,
       originalPrice: data.originalPrice ? Number(data.originalPrice) : null,
       categoryId: data.categoryId ? String(data.categoryId) : null,
       images: (data.images as string[]) || [],
@@ -266,6 +284,7 @@ export async function createProduct(data: Record<string, unknown>): Promise<{ su
 
 export async function updateProduct(id: string, data: Record<string, unknown>): Promise<{ success: boolean }> {
   await verifyAdmin();
+  const config = await prisma.siteConfig.findUnique({ where: { id: 1 } });
 
   // Filter out id, createdAt, updatedAt, and relation fields
   const { id: _id, createdAt: _c, updatedAt: _u, reviews: _r, orderItems: _o, ...rest } = data;
@@ -277,13 +296,25 @@ export async function updateProduct(id: string, data: Record<string, unknown>): 
     deletedAtUpdate = null;
   }
 
+  let priceInside = rest.priceInside !== undefined ? Number(rest.priceInside) : undefined;
+  let priceOutside = rest.priceOutside !== undefined ? Number(rest.priceOutside) : undefined;
+
+  const originalPrice = rest.originalPrice !== undefined ? (rest.originalPrice ? Number(rest.originalPrice) : null) : undefined;
+  const discountPercent = rest.discountPercent !== undefined ? Number(rest.discountPercent) : undefined;
+
+  if (originalPrice && discountPercent !== undefined && discountPercent > 0) {
+    const baseDiscounted = Math.round(originalPrice * (1 - discountPercent / 100));
+    priceInside = baseDiscounted + (config?.deliveryChargeInside || 0);
+    priceOutside = baseDiscounted + (config?.deliveryChargeOutside || 150);
+  }
+
   await prisma.product.update({
     where: { id },
     data: {
       name: rest.name !== undefined ? String(rest.name) : undefined,
       description: rest.description !== undefined ? String(rest.description) : undefined,
-      priceInside: rest.priceInside !== undefined ? Number(rest.priceInside) : undefined,
-      priceOutside: rest.priceOutside !== undefined ? Number(rest.priceOutside) : undefined,
+      priceInside,
+      priceOutside,
       originalPrice: rest.originalPrice !== undefined ? (rest.originalPrice ? Number(rest.originalPrice) : null) : undefined,
       categoryId: rest.categoryId !== undefined ? (rest.categoryId ? String(rest.categoryId) : null) : undefined,
       images: rest.images !== undefined ? (rest.images as string[]) : undefined,
@@ -586,6 +617,88 @@ export async function resendNotification(orderId: string, type: 'SMS' | 'EMAIL')
     return { success: false, error: "Database error" };
   }
 }
+
+// --- ADMIN ORDER ACTION ---
+
+export async function createAdminOrder(data: any): Promise<{ success: boolean; id?: string; error?: string }> {
+  await verifyAdmin();
+  try {
+    const config = await prisma.siteConfig.findUnique({ where: { id: 1 } });
+    const orderItemsData: any[] = [];
+    let subtotal = 0;
+
+    for (const item of data.items) {
+      const product = await prisma.product.findUnique({ where: { id: item.productId } });
+      if (!product) throw new Error(`Product not found: ${item.productId}`);
+
+      const unitPrice = data.isInsideValley ? product.priceInside : product.priceOutside;
+      subtotal += unitPrice * item.quantity;
+
+      orderItemsData.push({
+        productId: item.productId,
+        quantity: item.quantity,
+        price: unitPrice
+      });
+    }
+
+    let couponDiscountAmount = 0;
+    let appliedCoupon: any = null;
+    let deliveryCharge = 0;
+
+    if (config) {
+      if (subtotal < (config.freeDeliveryThreshold || 5000)) {
+        deliveryCharge = data.isInsideValley ? (config.deliveryChargeInside || 0) : (config.deliveryChargeOutside || 150);
+      }
+    }
+
+    const codFee = config?.codFee || 0;
+    const finalTotal = subtotal + deliveryCharge + codFee;
+
+    const order = await prisma.$transaction(async (tx) => {
+      // Decrement stock
+      for (const item of orderItemsData) {
+        await tx.product.update({
+          where: { id: item.productId },
+          data: { stock: { decrement: item.quantity } }
+        });
+      }
+
+      return await tx.order.create({
+        data: {
+          customerName: data.customerName,
+          phone: data.phone,
+          email: data.email || null,
+          province: data.province || 'N/A',
+          district: data.district || 'N/A',
+          address: data.address,
+          landmark: data.landmark || null,
+          isInsideValley: data.isInsideValley,
+          notes: data.notes || null,
+          total: finalTotal,
+          ipAddress: 'admin_manual',
+          couponId: null,
+          couponCode: null,
+          couponDiscount: null,
+          idempotencyKey: `admin_${Date.now()}`,
+          items: {
+            create: orderItemsData.map(item => ({
+              productId: item.productId,
+              quantity: item.quantity,
+              price: item.price
+            }))
+          }
+        }
+      });
+    });
+
+    revalidatePath('/admin');
+    return { success: true, id: order.id };
+  } catch (error: any) {
+    logger.error("Admin order creation failed", error);
+    return { success: false, error: error.message || "Failed to create order" };
+  }
+}
+
 // --- COUPON ACTIONS ---
 
 export async function createCoupon(data: any): Promise<{ success: boolean; error?: string }> {

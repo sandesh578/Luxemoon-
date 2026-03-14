@@ -48,20 +48,20 @@ export const Footer = () => {
         <div>
           <h4 className="text-white font-bold mb-6 tracking-wide text-sm uppercase">{t('footer.shop')}</h4>
           <ul className="space-y-3 text-sm">
-            <li><Link href="/shop" prefetch={false} className="hover:text-amber-500 transition-colors">{t('footer.allProducts')}</Link></li>
-            <li><Link href="/shop" prefetch={false} className="hover:text-amber-500 transition-colors">{t('footer.nanoplastiaKits')}</Link></li>
+            <li><Link href="/shop" className="hover:text-amber-500 transition-colors">{t('footer.allProducts')}</Link></li>
+            <li><Link href="/shop" className="hover:text-amber-500 transition-colors">{t('footer.nanoplastiaKits')}</Link></li>
           </ul>
         </div>
 
         <div>
           <h4 className="text-white font-bold mb-6 tracking-wide text-sm uppercase">{t('footer.support')}</h4>
           <ul className="space-y-3 text-sm">
-            <li><Link href="/about" prefetch={false} className="hover:text-amber-500 transition-colors">{t('footer.ourStory')}</Link></li>
-            <li><Link href="/delivery-policy" prefetch={false} className="hover:text-amber-500 transition-colors">{t('footer.deliveryPolicy')}</Link></li>
-            <li><Link href="/refund-policy" prefetch={false} className="hover:text-amber-500 transition-colors">{t('footer.refundPolicy')}</Link></li>
-            <li><Link href="/privacy" prefetch={false} className="hover:text-amber-500 transition-colors">{t('footer.privacyPolicy')}</Link></li>
-            <li><Link href="/terms" prefetch={false} className="hover:text-amber-500 transition-colors">{t('footer.terms')}</Link></li>
-            <li><Link href="/contact" prefetch={false} className="hover:text-amber-500 transition-colors">{t('footer.contactUs')}</Link></li>
+            <li><Link href="/about" className="hover:text-amber-500 transition-colors">{t('footer.ourStory')}</Link></li>
+            <li><Link href="/delivery-policy" className="hover:text-amber-500 transition-colors">{t('footer.deliveryPolicy')}</Link></li>
+            <li><Link href="/refund-policy" className="hover:text-amber-500 transition-colors">{t('footer.refundPolicy')}</Link></li>
+            <li><Link href="/privacy" className="hover:text-amber-500 transition-colors">{t('footer.privacyPolicy')}</Link></li>
+            <li><Link href="/terms" className="hover:text-amber-500 transition-colors">{t('footer.terms')}</Link></li>
+            <li><Link href="/contact" className="hover:text-amber-500 transition-colors">{t('footer.contactUs')}</Link></li>
           </ul>
         </div>
 

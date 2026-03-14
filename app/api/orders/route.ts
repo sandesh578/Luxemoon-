@@ -13,8 +13,8 @@ export const runtime = 'nodejs';
 const OrderSchema = z.object({
   customerName: z.string().min(1, 'Please enter your full name so we know who to deliver to.').max(100),
   phone: z.string().regex(/^9[78]\d{8}$/, 'Please enter a valid Nepali mobile number (98XXXXXXXX).'),
-  province: z.string().refine(val => val in NEPAL_PROVINCES, { message: 'Invalid province' }),
-  district: z.string().min(1).max(100),
+  province: z.string().optional().default('N/A'),
+  district: z.string().optional().default('N/A'),
   address: z.string().min(1, 'Kindly provide your delivery address.').max(500),
   landmark: z.string().max(200).optional(),
   notes: z.string().max(500).optional(),
@@ -55,15 +55,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ id: 'bot-' + Date.now() });
     }
 
-    // Province/District validation
-    if (!isValidProvinceDistrict(data.province, data.district)) {
-      return NextResponse.json({ error: 'Invalid province/district combination' }, { status: 400 });
-    }
-
     // Generate idempotency key if not provided
     const idempotencyKey = data.idempotencyKey || `${data.phone}_${Date.now()}`;
 
-    // 2. Blacklist Check
     const blocked = await prisma.blockedCustomer.findUnique({
       where: { phone: data.phone }
     });

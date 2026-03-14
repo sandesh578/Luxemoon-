@@ -1,49 +1,27 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import { useCart, useLocationContext, useConfig, useI18n } from '@/components/Providers';
 import { useRouter } from 'next/navigation';
-import { Loader2, ChevronDown, MapPin, Truck, Clock, CreditCard, AlertCircle, Navigation2, User, Phone, Mail } from 'lucide-react';
-import { NEPAL_PROVINCES, getDistrictsForProvince, isValleyDistrict } from '@/lib/nepal-data';
-import Image from 'next/image';
-import { optimizeImage } from '@/lib/image';
+import { Loader2, Truck, AlertCircle, Navigation2, User, Phone, Mail, MapPin } from 'lucide-react';
+import { getDistrictsForProvince, isValleyDistrict } from '@/lib/nepal-data';
 import { z } from 'zod';
 
 const CheckoutFormSchema = z.object({
   customerName: z.string().trim().min(1, 'Please enter your full name so we know who to deliver to.'),
   phone: z.string().trim().regex(/^9[78]\d{8}$/, 'Please enter a valid Nepali mobile number (98XXXXXXXX).'),
   address: z.string().trim().min(1, 'Kindly provide your delivery address.'),
-  province: z.string().trim().min(1),
-  district: z.string().trim().min(1),
+  province: z.string().optional(),
+  district: z.string().optional(),
   deliveryZone: z.enum(['inside', 'outside'], { message: 'Please select your delivery location.' }),
 });
 
 type CheckoutField = keyof z.infer<typeof CheckoutFormSchema>;
-type AddressSuggestion = {
-  display_name: string;
-  lat: string;
-  lon: string;
-  address?: {
-    state?: string;
-    province?: string;
-    county?: string;
-    district?: string;
-    city?: string;
-    municipality?: string;
-    town?: string;
-    village?: string;
-  };
-};
 
-function normalizePlaceText(value?: string): string {
-  if (!value) return '';
-  return value
-    .toLowerCase()
-    .replace(/\b(province|district|metropolitan city|sub-metropolitan city|rural municipality|municipality)\b/g, '')
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
+
+const AddressAutocompleteField = dynamic(() => import('@/components/checkout/AddressAutocompleteField'));
+const CheckoutSummary = dynamic(() => import('@/components/checkout/CheckoutSummary'));
 
 export default function CheckoutPage() {
   const { items, cartTotal, clearCart } = useCart();
@@ -111,26 +89,13 @@ export default function CheckoutPage() {
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<CheckoutField, string>>>({});
   const [showValidationSummary, setShowValidationSummary] = useState(false);
 
-  // Coupon State
-  const [couponCode, setCouponCode] = useState('');
-  const [couponError, setCouponError] = useState('');
-  const [couponSuccess, setCouponSuccess] = useState('');
-  const [validatingCoupon, setValidatingCoupon] = useState(false);
-  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+  const [appliedCouponCode, setAppliedCouponCode] = useState<string | undefined>(undefined);
 
   const [form, setForm] = useState({
     customerName: '', phone: '', email: '', province: '', district: '',
     address: '', landmark: '', notes: '', website: '',
   });
   const [deliveryZone, setDeliveryZone] = useState<'inside' | 'outside' | ''>('');
-  const [addressSuggestions, setAddressSuggestions] = useState<AddressSuggestion[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [addressHintError, setAddressHintError] = useState('');
-  const [selectedLatLon, setSelectedLatLon] = useState<{ lat: string; lon: string } | null>(null);
-  const [isAddressLoading, setIsAddressLoading] = useState(false);
-  const addressAbortRef = useRef<AbortController | null>(null);
-  const addressDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const addressCacheRef = useRef<Map<string, AddressSuggestion[]>>(new Map());
 
   const districts = useMemo(() => getDistrictsForProvince(form.province), [form.province]);
 
@@ -153,35 +118,7 @@ export default function CheckoutPage() {
 
 
   const codFee = config.codFee || 0;
-
-  const totalDiscount = items.reduce((acc, item) => {
-    const currentPrice = isInsideValley ? item.priceInside : item.priceOutside;
-    const original = (item as any).originalPrice || currentPrice;
-    if (original > currentPrice) return acc + (original - currentPrice) * item.quantity;
-    return acc;
-  }, 0);
-  const subtotal = cartTotal + totalDiscount;
-
-  // Coupon Calculation
-  let couponDiscountAmount = 0;
-  if (appliedCoupon) {
-    if (appliedCoupon.discountType === 'FIXED') {
-      couponDiscountAmount = appliedCoupon.discountValue;
-    } else if (appliedCoupon.discountType === 'PERCENTAGE') {
-      couponDiscountAmount = Math.floor(subtotal * (appliedCoupon.discountValue / 100));
-    }
-    if (appliedCoupon.maxDiscountCap && couponDiscountAmount > appliedCoupon.maxDiscountCap) {
-      couponDiscountAmount = appliedCoupon.maxDiscountCap;
-    }
-  }
-
-  const deliveryCharge = (subtotal - couponDiscountAmount) >= config.freeDeliveryThreshold
-    ? 0
-    : (isInsideValley ? config.deliveryChargeInside : config.deliveryChargeOutside);
-
   const estimatedDelivery = isInsideValley ? config.estimatedDeliveryInside : config.estimatedDeliveryOutside;
-
-  const finalTotal = subtotal - couponDiscountAmount + deliveryCharge + codFee;
 
   const set = (key: string, value: string) => setForm(prev => ({ ...prev, [key]: value }));
 
@@ -194,56 +131,9 @@ export default function CheckoutPage() {
     if (field === 'phone') return isNe ? 'कृपया मान्य नेपाली मोबाइल नम्बर लेख्नुहोस् (98XXXXXXXX)।' : 'Please enter a valid Nepali mobile number (98XXXXXXXX).';
     if (field === 'address') return isNe ? 'कृपया डेलिभरी ठेगाना लेख्नुहोस्।' : 'Kindly provide your delivery address.';
     if (field === 'deliveryZone') return isNe ? 'कृपया डेलिभरी स्थान छान्नुहोस्।' : 'Please select your delivery location.';
-    if (field === 'province') return isNe ? 'कृपया प्रदेश छान्नुहोस्।' : 'Please select your province.';
-    if (field === 'district') return isNe ? 'कृपया जिल्ला छान्नुहोस्।' : 'Please select your district.';
     return isNe ? 'कृपया यो विवरण जाँच गर्नुहोस्।' : 'Please check this field.';
   };
 
-  const inferProvinceDistrict = (suggestion: AddressSuggestion): { province?: string; district?: string } => {
-    const candidates = [
-      suggestion.address?.state,
-      suggestion.address?.province,
-      suggestion.address?.county,
-      suggestion.address?.district,
-      suggestion.address?.city,
-      suggestion.address?.municipality,
-      suggestion.address?.town,
-      suggestion.address?.village,
-      ...suggestion.display_name.split(','),
-    ]
-      .map(normalizePlaceText)
-      .filter(Boolean);
-
-    let province: string | undefined;
-    const provinces = Object.keys(NEPAL_PROVINCES);
-
-    for (const p of provinces) {
-      const pNorm = normalizePlaceText(p);
-      if (candidates.some(c => c.includes(pNorm) || pNorm.includes(c))) {
-        province = p;
-        break;
-      }
-    }
-
-    const districtPool = province
-      ? NEPAL_PROVINCES[province]
-      : provinces.flatMap(p => NEPAL_PROVINCES[p]);
-
-    let district: string | undefined;
-    for (const d of districtPool) {
-      const dNorm = normalizePlaceText(d);
-      if (candidates.some(c => c.includes(dNorm) || dNorm.includes(c))) {
-        district = d;
-        break;
-      }
-    }
-
-    if (!province && district) {
-      province = provinces.find(p => NEPAL_PROVINCES[p].includes(district));
-    }
-
-    return { province, district };
-  };
 
   const validateField = (field: CheckoutField): boolean => {
     try {
@@ -284,88 +174,6 @@ export default function CheckoutPage() {
     return false;
   };
 
-  const fetchAddressSuggestions = (query: string) => {
-    if (addressDebounceRef.current) clearTimeout(addressDebounceRef.current);
-    if (query.trim().length < 3) {
-      setAddressSuggestions([]);
-      setShowSuggestions(false);
-      setIsAddressLoading(false);
-      setAddressHintError('');
-      return;
-    }
-
-    addressDebounceRef.current = setTimeout(async () => {
-      const normalized = query.trim().toLowerCase();
-      if (addressCacheRef.current.has(normalized)) {
-        const cached = addressCacheRef.current.get(normalized) || [];
-        setAddressSuggestions(cached);
-        setShowSuggestions(cached.length > 0);
-        setAddressHintError('');
-        return;
-      }
-
-      addressAbortRef.current?.abort();
-      const controller = new AbortController();
-      addressAbortRef.current = controller;
-      setIsAddressLoading(true);
-      setAddressHintError('');
-
-      try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&countrycodes=np&limit=5`, {
-          signal: controller.signal,
-        });
-        if (!res.ok) throw new Error('Address lookup failed');
-        const data = (await res.json()) as AddressSuggestion[];
-        addressCacheRef.current.set(normalized, data);
-        setAddressSuggestions(data);
-        setShowSuggestions(data.length > 0);
-      } catch (err) {
-        if ((err as Error).name !== 'AbortError') {
-          setAddressHintError(copy.couldntFetchAddress);
-          setAddressSuggestions([]);
-          setShowSuggestions(false);
-        }
-      } finally {
-        setIsAddressLoading(false);
-      }
-    }, 500);
-  };
-
-  const handleApplyCoupon = async () => {
-    if (!couponCode.trim()) return;
-    setValidatingCoupon(true);
-    setCouponError('');
-    setCouponSuccess('');
-    setAppliedCoupon(null);
-
-    try {
-      const res = await fetch('/api/coupons/validate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          code: couponCode.trim(),
-          subtotal,
-          itemIds: items.map(i => i.id)
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Invalid coupon');
-
-      setAppliedCoupon(data);
-      setCouponSuccess('Coupon applied successfully!');
-    } catch (err: any) {
-      setCouponError(err.message);
-    } finally {
-      setValidatingCoupon(false);
-    }
-  };
-
-  const handleRemoveCoupon = () => {
-    setAppliedCoupon(null);
-    setCouponCode('');
-    setCouponSuccess('');
-    setCouponError('');
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -387,7 +195,7 @@ export default function CheckoutPage() {
             quantity: i.quantity,
             price: isInsideValley ? i.priceInside : i.priceOutside,
           })),
-          couponCode: appliedCoupon?.code || undefined,
+          couponCode: appliedCouponCode || undefined,
         }),
       });
 
@@ -485,44 +293,6 @@ export default function CheckoutPage() {
               </div>
               {fieldErrors.deliveryZone && <p className="text-xs text-red-600 -mt-1">{fieldErrors.deliveryZone}</p>}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="relative">
-                  <label className="block text-sm font-bold text-stone-600 mb-1">{copy.province} *</label>
-                  <select
-                    required
-                    className={`w-full p-2.5 border rounded-lg appearance-none bg-white pr-8 ${fieldErrors.province ? 'border-red-300 bg-red-50/30' : 'border-stone-200'}`}
-                    value={form.province}
-                    onChange={e => { set('province', e.target.value); if (fieldErrors.province) validateField('province'); }}
-                    onBlur={() => validateField('province')}
-                  >
-                    <option value="">{copy.selectProvince}</option>
-                    {Object.keys(NEPAL_PROVINCES).map(p => (
-                      <option key={p} value={p}>{p}</option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-9 w-4 h-4 text-stone-400 pointer-events-none" />
-                  {fieldErrors.province && <p className="text-xs text-red-600 mt-1">{fieldErrors.province}</p>}
-                </div>
-                <div className="relative">
-                  <label className="block text-sm font-bold text-stone-600 mb-1">{copy.district} *</label>
-                  <select
-                    required
-                    disabled={!form.province}
-                    className={`w-full p-2.5 border rounded-lg appearance-none bg-white pr-8 disabled:bg-stone-50 disabled:text-stone-400 ${fieldErrors.district ? 'border-red-300 bg-red-50/30' : 'border-stone-200'}`}
-                    value={form.district}
-                    onChange={e => { set('district', e.target.value); if (fieldErrors.district) validateField('district'); }}
-                    onBlur={() => validateField('district')}
-                  >
-                    <option value="">{form.province ? copy.selectDistrict : copy.selectProvinceFirst}</option>
-                    {districts.map(d => (
-                      <option key={d} value={d}>{d}</option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-9 w-4 h-4 text-stone-400 pointer-events-none" />
-                  {fieldErrors.district && <p className="text-xs text-red-600 mt-1">{fieldErrors.district}</p>}
-                </div>
-              </div>
-
               {form.district && (
                 <div className="flex items-center gap-2 p-2 bg-amber-50 rounded-lg border border-amber-100">
                   <MapPin className="w-4 h-4 text-amber-600" />
@@ -534,55 +304,23 @@ export default function CheckoutPage() {
 
               <div>
                 <label className="block text-sm font-bold text-stone-600 mb-1">{copy.fullAddress} *</label>
-                <div className="relative">
-                  <input
-                    required
-                    className={`w-full p-2.5 border rounded-lg ${fieldErrors.address ? 'border-red-300 bg-red-50/30' : 'border-stone-200'}`}
-                    value={form.address}
-                    onChange={e => {
-                      set('address', e.target.value);
-                      setSelectedLatLon(null);
-                      fetchAddressSuggestions(e.target.value);
-                      if (fieldErrors.address) validateField('address');
-                    }}
-                    onBlur={() => {
-                      validateField('address');
-                      setTimeout(() => setShowSuggestions(false), 120);
-                    }}
-                    onFocus={() => { if (addressSuggestions.length > 0) setShowSuggestions(true); }}
-                    placeholder={copy.addressPlaceholder}
-                  />
-                  {isAddressLoading && <Loader2 className="w-4 h-4 animate-spin text-stone-400 absolute right-3 top-1/2 -translate-y-1/2" />}
-                  {showSuggestions && addressSuggestions.length > 0 && (
-                    <div className="absolute z-20 mt-1 w-full bg-white border border-stone-200 rounded-lg shadow-xl max-h-64 overflow-auto">
-                      {addressSuggestions.map((s, idx) => (
-                        <button
-                          key={`${s.lat}-${s.lon}-${idx}`}
-                          type="button"
-                          className="w-full text-left px-3 py-2 text-sm hover:bg-stone-50 border-b border-stone-100 last:border-b-0"
-                          onClick={() => {
-                            set('address', s.display_name);
-                            setSelectedLatLon({ lat: s.lat, lon: s.lon });
-                            const inferred = inferProvinceDistrict(s);
-                            if (inferred.province) set('province', inferred.province);
-                            if (inferred.district) set('district', inferred.district);
-                            setShowSuggestions(false);
-                            setAddressHintError('');
-                            validateField('address');
-                            if (inferred.province) validateField('province');
-                            if (inferred.district) validateField('district');
-                          }}
-                        >
-                          {s.display_name}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <p className="text-[11px] text-stone-400 mt-1">{copy.addressHint}</p>
-                {addressHintError && <p className="text-xs text-amber-700 mt-1">{addressHintError}</p>}
-                {selectedLatLon && <p className="text-[11px] text-stone-400 mt-1">{copy.locationSaved}</p>}
-                {fieldErrors.address && <p className="text-xs text-red-600 mt-1">{fieldErrors.address}</p>}
+                <AddressAutocompleteField
+                  value={form.address}
+                  placeholder={copy.addressPlaceholder}
+                  hint={copy.addressHint}
+                  couldntFetchAddress={copy.couldntFetchAddress}
+                  locationSaved={copy.locationSaved}
+                  error={fieldErrors.address}
+                  onChange={(value) => {
+                    set('address', value);
+                    if (fieldErrors.address) validateField('address');
+                  }}
+                  onBlur={() => {
+                    validateField('address');
+                  }}
+                  onProvinceDetected={(value) => set('province', value)}
+                  onDistrictDetected={(value) => set('district', value)}
+                />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -599,138 +337,23 @@ export default function CheckoutPage() {
         </div>
 
         {/* Order Summary */}
+        {/* Order Summary */}
         <div className="lg:col-span-2">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-stone-200 sticky top-24 space-y-4">
-            <h2 className="text-lg font-bold text-stone-800">{copy.summary}</h2>
-
-            <div className="space-y-3 max-h-64 overflow-y-auto">
-              {items.map(item => (
-                <div key={item.id} className="flex gap-3 text-sm">
-                  <div className="w-14 h-14 rounded-lg overflow-hidden bg-stone-100 flex-shrink-0">
-                    <Image src={optimizeImage(item.images[0])} alt={item.name} width={56} height={56} className="w-full h-full object-cover" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-stone-900 truncate">{item.name}</p>
-                    <p className="text-xs text-stone-500">{copy.qty}: {item.quantity}</p>
-                  </div>
-                  <span className="font-bold text-stone-800 whitespace-nowrap">
-                    NPR {((isInsideValley ? item.priceInside : item.priceOutside) * item.quantity).toLocaleString()}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <div className="border-t border-stone-200 pt-4 space-y-4">
-
-              {/* Coupon Input Area */}
-              <div className="bg-stone-50 p-3 rounded-lg border border-stone-100">
-                <label className="block text-xs font-bold text-stone-600 mb-2 uppercase tracking-wider">{copy.promoCode}</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                    disabled={appliedCoupon !== null}
-                    placeholder={copy.enterCode}
-                    className="flex-1 px-3 py-2 text-sm border border-stone-200 rounded-md focus:outline-none focus:ring-1 focus:ring-amber-500 disabled:bg-stone-100 disabled:text-stone-500 uppercase"
-                  />
-                  {appliedCoupon ? (
-                    <button
-                      type="button"
-                      onClick={handleRemoveCoupon}
-                      className="px-4 py-2 bg-stone-200 text-stone-700 text-sm font-bold rounded-md hover:bg-stone-300 transition-colors"
-                    >
-                      {copy.remove}
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleApplyCoupon}
-                      disabled={validatingCoupon || !couponCode.trim()}
-                      className="px-4 py-2 bg-stone-900 text-white text-sm font-bold rounded-md hover:bg-stone-800 transition-colors disabled:opacity-50"
-                    >
-                      {validatingCoupon ? <Loader2 className="w-4 h-4 animate-spin" /> : copy.apply}
-                    </button>
-                  )}
-                </div>
-                {couponError && <p className="text-xs text-red-600 font-medium mt-2">{couponError}</p>}
-                {couponSuccess && <p className="text-xs text-green-600 font-medium mt-2">{couponSuccess}</p>}
-              </div>
-
-            </div>
-
-            <div className="border-t border-stone-200 pt-4 space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-stone-500">{copy.itemsTotal}</span>
-                <span className="font-bold">NPR {subtotal.toLocaleString()}</span>
-              </div>
-              {totalDiscount > 0 && (
-                <div className="flex justify-between text-green-700 bg-green-50 border border-green-100 rounded-lg px-2 py-1">
-                  <span className="flex items-center gap-1">{copy.savings}</span>
-                  <span className="font-bold">- NPR {totalDiscount.toLocaleString()}</span>
-                </div>
-              )}
-              {couponDiscountAmount > 0 && (
-                <div className="flex justify-between text-green-700 bg-green-50 border border-green-100 rounded-lg px-2 py-1">
-                  <span className="flex items-center gap-1">{copy.coupon} ({appliedCoupon?.code})</span>
-                  <span className="font-bold">- NPR {couponDiscountAmount.toLocaleString()}</span>
-                </div>
-              )}
-              <div className="flex justify-between pt-1">
-                <span className="text-stone-500 flex items-center gap-1"><Truck className="w-3.5 h-3.5" /> {copy.deliveryCharge}</span>
-                <span className="font-bold">
-                  {deliveryCharge === 0 ? (
-                    <span className="text-green-600">{copy.free}</span>
-                  ) : (
-                    `NPR ${deliveryCharge.toLocaleString()}`
-                  )}
-                </span>
-              </div>
-              {codFee > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-stone-500 flex items-center gap-1"><CreditCard className="w-3.5 h-3.5" /> {copy.codFee}</span>
-                  <span className="font-bold">NPR {codFee}</span>
-                </div>
-              )}
-              {form.district && (
-                <div className="flex justify-between text-xs text-stone-400 items-center gap-1">
-                  <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {copy.estDelivery}</span>
-                  <span>{estimatedDelivery}</span>
-                </div>
-              )}
-              <div className="flex justify-between text-lg pt-2 border-t border-stone-200">
-                <span className="font-bold text-stone-900">{copy.finalTotal}</span>
-                <span className="font-extrabold text-stone-900 text-xl">NPR {finalTotal.toLocaleString()}</span>
-              </div>
-            </div>
-
-            {showValidationSummary && (
-              <div className="flex items-start gap-2 p-3 rounded-xl bg-[#FDECEC] text-red-700 border border-red-100 animate-in fade-in duration-200">
-                <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <div className="text-sm">
-                  <p className="font-semibold">{copy.almostThereTitle}</p>
-                  <p>{copy.almostThereBody}</p>
-                </div>
-              </div>
-            )}
-            {error && (
-              <div className="flex items-start gap-2 p-3 rounded-xl bg-[#FDECEC] text-red-700 border border-red-100 animate-in fade-in duration-200">
-                <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <p className="text-sm font-medium">{error}</p>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              form="checkout-form"
-              disabled={loading}
-              className="w-full py-3.5 bg-gradient-to-r from-[#5C3A21] to-[#C7782A] text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg transition-transform hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
-            >
-              {loading ? <Loader2 className="animate-spin w-5 h-5" /> : copy.placeOrder}
-            </button>
-            <p className="text-[11px] text-center text-stone-500">{copy.thanks}</p>
-            <p className="text-[10px] text-center text-stone-400">{copy.termsNote}</p>
-          </div>
+          <CheckoutSummary
+            items={items}
+            isInsideValley={isInsideValley}
+            freeDeliveryThreshold={config.freeDeliveryThreshold}
+            deliveryChargeInside={config.deliveryChargeInside}
+            deliveryChargeOutside={config.deliveryChargeOutside}
+            codFee={codFee}
+            estimatedDelivery={estimatedDelivery}
+            formDistrict={form.district}
+            copy={copy}
+            loading={loading}
+            error={error}
+            showValidationSummary={showValidationSummary}
+            onCouponCodeChange={setAppliedCouponCode}
+          />
         </div>
       </div>
     </div>

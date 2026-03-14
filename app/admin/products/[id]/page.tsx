@@ -1,19 +1,29 @@
 'use client';
 
 import React, { useState, useEffect, use } from 'react';
+import dynamic from 'next/dynamic';
 import { updateProduct, deleteProduct } from '../../actions';
 import { useRouter } from 'next/navigation';
-import { Loader2, Plus, X, ArrowLeft, ListPlus, HelpCircle, Image as ImageIcon } from 'lucide-react';
+import { Loader2, X, ArrowLeft, ListPlus, HelpCircle, Image as ImageIcon } from 'lucide-react';
 import { ImageUpload } from '@/components/admin/ImageUpload';
 import { VideoUpload } from '@/components/admin/VideoUpload';
-import { RichTextEditor } from '@/components/RichTextEditor';
 import { toast } from 'sonner';
 import Link from 'next/link';
+
+const RichTextEditor = dynamic(
+  () => import('@/components/RichTextEditor').then((mod) => mod.RichTextEditor),
+  {
+    ssr: false,
+    loading: () => <div className="h-40 rounded-lg border border-stone-200 bg-stone-50 animate-pulse" />,
+  }
+);
 
 interface Category {
   id: string;
   name: string;
 }
+
+const getEditProductCacheKey = (id: string) => `admin_edit_product_bootstrap_${id}`;
 
 export default function EditProduct({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -35,6 +45,30 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
   const [bundleItemIds, setBundleItemIds] = useState<string[]>([]);
 
   useEffect(() => {
+    const cacheKey = getEditProductCacheKey(resolvedParams.id);
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached) as {
+          categories: Category[];
+          products: { id: string; name: string }[];
+          product: any;
+        };
+        setCategories(parsed.categories);
+        setProducts(parsed.products);
+        setData(parsed.product);
+        setFeatures(parsed.product.features?.length ? parsed.product.features : ['']);
+        setBenefits(parsed.product.benefits?.length ? parsed.product.benefits : ['']);
+        setFaqs(Array.isArray(parsed.product.faqs) ? parsed.product.faqs : []);
+        setTags(parsed.product.tags || []);
+        setComparisonImages(parsed.product.comparisonImages || []);
+        setBundleItemIds(parsed.product.bundleItemIds || []);
+        setFetching(false);
+      } catch {
+        sessionStorage.removeItem(cacheKey);
+      }
+    }
+
     const load = async () => {
       try {
         setLoadError(null);
@@ -64,6 +98,11 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
         }
 
         setData(productRes);
+        sessionStorage.setItem(cacheKey, JSON.stringify({
+          categories: catRes,
+          products: prodRes,
+          product: productRes,
+        }));
         setFeatures(productRes.features?.length ? productRes.features : ['']);
         setBenefits(productRes.benefits?.length ? productRes.benefits : ['']);
         setFaqs(Array.isArray(productRes.faqs) ? productRes.faqs : []);
@@ -94,6 +133,7 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
       bundleItemIds,
     });
     if (result.success) {
+      sessionStorage.removeItem(getEditProductCacheKey(resolvedParams.id));
       toast.success('Product updated!');
       router.push('/admin/products');
     } else {
@@ -107,6 +147,7 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
     setLoading(true);
     const res = await deleteProduct(resolvedParams.id);
     if (res.success) {
+      sessionStorage.removeItem(getEditProductCacheKey(resolvedParams.id));
       toast.success('Product deleted permanently');
       router.push('/admin/products');
     } else {
@@ -306,6 +347,10 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
               <div>
                 <Label>Original Price (MSRP)</Label>
                 <input type="number" className="w-full p-2 border rounded-lg text-stone-500" value={data.originalPrice || ''} onChange={e => set('originalPrice', e.target.value ? parseInt(e.target.value) : null)} />
+              </div>
+              <div>
+                <Label>Discount Percentage (%)</Label>
+                <input type="number" className="w-full p-2 border rounded-lg text-amber-700 font-bold" value={data.discountPercent || ''} onChange={e => set('discountPercent', e.target.value ? parseInt(e.target.value) : 0)} />
               </div>
               <div>
                 <Label>Current Stock</Label>

@@ -15,7 +15,7 @@ export const dictionaries = {
       rootedInKorea: "Rooted in Korea",
       home: "Home",
       shop: "Shop",
-      ourStory: "Our Story",
+      ourStory: "About Us",
       contact: "Contact",
       bag: "Your Bag",
     },
@@ -25,7 +25,7 @@ export const dictionaries = {
       contact: "Contact",
       allProducts: "All Products",
       nanoplastiaKits: "Nanoplastia Kits",
-      ourStory: "Our Story",
+      ourStory: "About Us",
       deliveryPolicy: "Delivery Policy",
       refundPolicy: "Refund Policy",
       privacyPolicy: "Privacy Policy",
@@ -70,7 +70,7 @@ export const dictionaries = {
       heritageTitleLine2: "Korean Haircare.",
       heritageBody:
         "Luxe Moon brings the sophisticated tradition of Korean beauty innovation to Nepal. Our formulas combine ancient botanical wisdom with modern Nanoplastia technology, delivering professional salon results in the comfort of your home.",
-      readFullStory: "Read Our Full Story",
+      readFullStory: "About Us",
       nanoLabel: "The Glass Hair Revolution",
       nanoTitle: "Nano Botox Biotin + Keratin 4-in-1",
       nanoSubtitle:
@@ -115,7 +115,7 @@ export const dictionaries = {
       soldOut: "Sold Out",
     },
     about: {
-      title: "Our Story",
+      title: "About Us",
       fallbackP1:
         "Luxe Moon was born from a simple belief: everyone deserves access to world-class haircare, no matter where they are.",
       fallbackP2:

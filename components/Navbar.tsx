@@ -4,10 +4,15 @@ import { Menu, ShoppingBag, ArrowRight } from 'lucide-react';
 import Image from 'next/image';
 import { optimizeImage } from '@/lib/image';
 import { useCart, useConfig, useI18n } from './Providers';
-import { CartDrawer } from './CartDrawer';
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import dynamic from 'next/dynamic';
+
+const CartDrawer = dynamic(
+  () => import('./CartDrawer').then((mod) => mod.CartDrawer),
+  { ssr: false }
+);
 
 export const Navbar = () => {
   const { items, setIsCartOpen, cartTotal } = useCart();
@@ -53,10 +58,10 @@ export const Navbar = () => {
               </div>
 
               <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-stone-600 tracking-wide">
-                <Link href="/" prefetch={false} className="hover:text-amber-700 transition-colors">{t('nav.home').toUpperCase()}</Link>
-                <Link href="/shop" prefetch={false} className="hover:text-amber-700 transition-colors">{t('nav.shop').toUpperCase()}</Link>
-                <Link href="/about" prefetch={false} className="hover:text-amber-700 transition-colors">{t('nav.ourStory').toUpperCase()}</Link>
-                <Link href="/contact" prefetch={false} className="hover:text-amber-700 transition-colors">{t('nav.contact').toUpperCase()}</Link>
+                <Link href="/" className="hover:text-amber-700 transition-colors">{t('nav.home').toUpperCase()}</Link>
+                <Link href="/shop" className="hover:text-amber-700 transition-colors">{t('nav.shop').toUpperCase()}</Link>
+                <Link href="/about" className="hover:text-amber-700 transition-colors">{t('nav.ourStory').toUpperCase()}</Link>
+                <Link href="/contact" className="hover:text-amber-700 transition-colors">{t('nav.contact').toUpperCase()}</Link>
               </div>
 
               <div className="flex items-center gap-6">

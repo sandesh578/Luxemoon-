@@ -1,5 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { AdminOrderTable } from './AdminOrderTable';
+import Link from 'next/link';
+import { Plus } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -90,6 +92,9 @@ export default async function AdminDashboard() {
 
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-serif font-bold text-stone-900">Order Management</h1>
+        <Link href="/admin/orders/new" className="px-4 py-2 bg-stone-900 text-white text-sm font-bold rounded-lg flex items-center gap-2 hover:bg-stone-800 transition-colors">
+          <Plus className="w-4 h-4" /> Create Manual Order
+        </Link>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">

@@ -2,12 +2,49 @@ import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Star, Sparkles, ChevronRight, Grid } from 'lucide-react';
+import { unstable_cache } from 'next/cache';
 
 import { SortDropdown } from './SortDropdown';
 import { translate } from '@/lib/i18n';
 import { getLocaleServer } from '@/lib/i18n-server';
 
 export const revalidate = 60;
+
+const getCachedShopData = unstable_cache(
+  async (sortParam: string, filterParam: string) => {
+    let orderBy: any = [{ isFeatured: 'desc' }, { createdAt: 'desc' }];
+    let where: any = { isActive: true, isArchived: false, isDraft: false };
+
+    if (sortParam === 'price_asc') orderBy = { priceInside: 'asc' };
+    else if (sortParam === 'price_desc') orderBy = { priceInside: 'desc' };
+    else if (sortParam === 'newest') orderBy = { createdAt: 'desc' };
+    else if (sortParam === 'bestselling') orderBy = { orderItems: { _count: 'desc' } };
+
+    if (filterParam === 'featured') {
+      where.isFeatured = true;
+    } else if (filterParam === 'new') {
+      where.isNew = true;
+    } else if (filterParam === 'bestsellers') {
+      orderBy = { orderItems: { _count: 'desc' } };
+    }
+
+    return Promise.all([
+      prisma.product.findMany({
+        where,
+        select: {
+          id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, isFeatured: true, isNew: true, stock: true,
+        },
+        orderBy,
+      }),
+      prisma.category.findMany({
+        select: { id: true, slug: true, name: true },
+        orderBy: { name: 'asc' },
+      }),
+    ]);
+  },
+  ['shop-page-data'],
+  { tags: ['products', 'categories'], revalidate: 60 }
+);
 
 export default async function ShopPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
   const locale = await getLocaleServer();
@@ -27,32 +64,17 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
   else if (sortParam === 'bestselling') orderBy = { orderItems: { _count: 'desc' } };
 
   if (filterParam === 'featured') {
-    where.isFeatured = true;
     pageTitle = t('shopPage.featuredTitle');
     pageSubtitle = t('shopPage.featuredSubtitle');
   } else if (filterParam === 'new') {
-    where.isNew = true;
     pageTitle = t('shopPage.newTitle');
     pageSubtitle = t('shopPage.newSubtitle');
   } else if (filterParam === 'bestsellers') {
-    orderBy = { orderItems: { _count: 'desc' } };
     pageTitle = t('shopPage.bestTitle');
     pageSubtitle = t('shopPage.bestSubtitle');
   }
 
-  const [products, categories] = await Promise.all([
-    prisma.product.findMany({
-      where,
-      select: {
-        id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, isFeatured: true, isNew: true, stock: true,
-      },
-      orderBy,
-    }),
-    prisma.category.findMany({
-      select: { id: true, slug: true, name: true },
-      orderBy: { name: 'asc' },
-    }),
-  ]);
+  const [products, categories] = await getCachedShopData(sortParam, filterParam);
 
   return (
     <div className="min-h-screen bg-[#FDFCFB]">
@@ -74,7 +96,6 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
             <Link
               key={cat.id}
               href={`/category/${cat.slug}`}
-              prefetch={false}
               className="text-sm font-bold text-stone-400 hover:text-stone-900 transition-colors whitespace-nowrap"
             >
               {cat.name}
@@ -97,7 +118,6 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
             <Link
               key={product.id}
               href={`/products/${product.slug}`}
-              prefetch={false}
               className="group cursor-pointer block"
             >
               <div className="relative aspect-[3/4] overflow-hidden rounded-3xl bg-stone-100 mb-4 shadow-sm group-hover:shadow-2xl transition-all duration-500">

@@ -30,7 +30,10 @@ export async function POST(req: Request) {
         });
 
         return NextResponse.json(category);
-    } catch {
+    } catch (error) {
+        if (error instanceof Error && error.message === 'Unauthorized') {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
         return NextResponse.json({ error: 'Failed to create category' }, { status: 500 });
     }
 }

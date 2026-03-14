@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
 import { ReviewSchema } from "../lib/review-validation";
+import { sanitizeAdminHtml } from "../lib/sanitize-admin-html";
+import { calculateDiscountedPrice, isDiscountActive } from "../lib/settings";
+import { prisma } from "../lib/prisma";
 
 function shouldPass() {
   const parsed = ReviewSchema.parse({
@@ -61,9 +64,81 @@ function shouldRejectEmptyNameAfterSanitize() {
   });
 }
 
-shouldPass();
-shouldRejectTooShortComment();
-shouldRejectTooManyImages();
-shouldRejectEmptyNameAfterSanitize();
+function shouldSanitizeAdminHtml() {
+  const sanitized = sanitizeAdminHtml(
+    '<p onclick="alert(1)">Safe</p><script>alert(1)</script><a href="javascript:evil()">x</a>'
+  );
 
-console.log("review-validation tests passed");
+  assert.equal(sanitized.includes("<script"), false);
+  assert.equal(sanitized.includes("onclick="), false);
+  assert.equal(sanitized.includes('href="#"'), true);
+  assert.equal(sanitized.includes("<p"), true);
+}
+
+function shouldHandleDiscountLogic() {
+  const now = new Date();
+  const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+  assert.equal(isDiscountActive(null, null), true);
+  assert.equal(isDiscountActive(yesterday, tomorrow), true);
+  assert.equal(isDiscountActive(tomorrow, null), false);
+  assert.equal(isDiscountActive(null, yesterday), false);
+
+  const noStacking = calculateDiscountedPrice(
+    1000,
+    {
+      discountPercent: 10,
+      discountFixed: null,
+      discountStart: yesterday,
+      discountEnd: tomorrow,
+    },
+    {
+      globalDiscountPercent: 20,
+      globalDiscountStart: yesterday,
+      globalDiscountEnd: tomorrow,
+      allowStacking: false,
+    }
+  );
+
+  assert.equal(noStacking, 1000);
+
+  const stacked = calculateDiscountedPrice(
+    1000,
+    {
+      discountPercent: 0,
+      discountFixed: null,
+      discountStart: null,
+      discountEnd: null,
+    },
+    {
+      globalDiscountPercent: 20,
+      globalDiscountStart: yesterday,
+      globalDiscountEnd: tomorrow,
+      allowStacking: true,
+    }
+  );
+
+  assert.equal(stacked, 800);
+}
+
+async function main() {
+  try {
+    shouldPass();
+    shouldRejectTooShortComment();
+    shouldRejectTooManyImages();
+    shouldRejectEmptyNameAfterSanitize();
+    shouldSanitizeAdminHtml();
+    shouldHandleDiscountLogic();
+    console.log("unit tests passed");
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });

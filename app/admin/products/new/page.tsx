@@ -1,13 +1,23 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { createProduct } from '../../actions';
 import { useRouter } from 'next/navigation';
-import { Loader2, Plus, X, ListPlus, HelpCircle, Image as ImageIcon } from 'lucide-react';
+import { Loader2, X, ListPlus, HelpCircle, Image as ImageIcon } from 'lucide-react';
 import { ImageUpload } from '@/components/admin/ImageUpload';
 import { VideoUpload } from '@/components/admin/VideoUpload';
-import { RichTextEditor } from '@/components/RichTextEditor';
 import { toast } from 'sonner';
+
+const RichTextEditor = dynamic(
+  () => import('@/components/RichTextEditor').then((mod) => mod.RichTextEditor),
+  {
+    ssr: false,
+    loading: () => <div className="h-40 rounded-lg border border-stone-200 bg-stone-50 animate-pulse" />,
+  }
+);
+
+const PRODUCT_FORM_CACHE_KEY = 'admin_product_form_bootstrap_v1';
 
 interface Category {
   id: string;
@@ -36,20 +46,35 @@ export default function NewProduct() {
   const [form, setForm] = useState({
     name: '', description: '', priceInside: '', priceOutside: '', originalPrice: '',
     categoryId: '', stock: '0', sku: '', weight: '', dimensions: '',
-    discountPercent: '0', discountFixed: '', discountStart: '', discountEnd: '',
+    discountPercent: '30', discountFixed: '', discountStart: '', discountEnd: '',
     isFeatured: false, isNew: false, isBundle: false,
     seoTitle: '', seoDescription: '',
     marketingDescription: '', ingredients: '', howToUse: '',
   });
 
   useEffect(() => {
+    const cached = sessionStorage.getItem(PRODUCT_FORM_CACHE_KEY);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached) as { categories: Category[]; products: { id: string; name: string }[] };
+        setCategories(parsed.categories);
+        setProducts(parsed.products);
+        if (parsed.categories.length > 0) set('categoryId', parsed.categories[0].id);
+      } catch {
+        sessionStorage.removeItem(PRODUCT_FORM_CACHE_KEY);
+      }
+    }
+
     Promise.all([
       fetch('/api/categories').then(res => res.json()),
       fetch('/api/products').then(res => res.json())
     ]).then(([catData, prodData]) => {
       setCategories(catData);
       setProducts(prodData);
-      if (catData.length > 0) set('categoryId', catData[0].id);
+      sessionStorage.setItem(PRODUCT_FORM_CACHE_KEY, JSON.stringify({ categories: catData, products: prodData }));
+      if (catData.length > 0) {
+        setForm(current => current.categoryId ? current : { ...current, categoryId: catData[0].id });
+      }
     });
   }, []);
 
@@ -241,6 +266,10 @@ export default function NewProduct() {
               <div>
                 <Label>Original Price (MSRP)</Label>
                 <input type="number" className="w-full p-2 border rounded-lg text-stone-500" value={form.originalPrice} onChange={e => set('originalPrice', e.target.value)} />
+              </div>
+              <div>
+                <Label>Discount Percentage (%)</Label>
+                <input type="number" className="w-full p-2 border rounded-lg text-amber-700 font-bold" value={form.discountPercent} onChange={e => set('discountPercent', e.target.value)} />
               </div>
               <div>
                 <Label>Current Stock</Label>

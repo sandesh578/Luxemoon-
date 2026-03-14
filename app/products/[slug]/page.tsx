@@ -3,39 +3,48 @@ import Link from 'next/link';
 import { OptimizedImage as Image } from '@/components/OptimizedImage';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { cache } from 'react';
+import { unstable_cache } from 'next/cache';
 import ProductPageClient from './ProductPageClient';
+import { sanitizeAdminHtml } from '@/lib/sanitize-admin-html';
 
 export const revalidate = 60;
 
-const getProduct = cache(async (slug: string) => {
-  return prisma.product.findUnique({
-    where: { slug },
-    include: {
-      category: { select: { name: true } },
-      reviews: {
-        where: { approved: true, isHidden: false },
-        orderBy: { createdAt: 'desc' as const },
-        select: {
-          id: true,
-          userName: true,
-          address: true,
-          rating: true,
-          comment: true,
-          verifiedPurchase: true,
-          images: true,
-          video: true,
-          isFeatured: true,
-          isVerified: true,
-          createdAt: true,
+function toIsoString(value: Date | string) {
+  return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
+}
+
+const getProduct = unstable_cache(
+  async (slug: string) => {
+    return prisma.product.findUnique({
+      where: { slug },
+      include: {
+        category: { select: { name: true } },
+        reviews: {
+          where: { approved: true, isHidden: false },
+          orderBy: { createdAt: 'desc' as const },
+          select: {
+            id: true,
+            userName: true,
+            address: true,
+            rating: true,
+            comment: true,
+            verifiedPurchase: true,
+            images: true,
+            video: true,
+            isFeatured: true,
+            isVerified: true,
+            createdAt: true,
+          },
         },
+        transformations: {
+          orderBy: { createdAt: 'desc' as const },
+        }
       },
-      transformations: {
-        orderBy: { createdAt: 'desc' as const },
-      }
-    },
-  });
-});
+    });
+  },
+  ['product-detail'],
+  { tags: ['products', 'reviews', 'transformations'], revalidate: 60 }
+);
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -122,16 +131,17 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   return <ProductPageClient
     product={{
       ...rest,
+      sanitizedMarketingDescription: rest.marketingDescription ? sanitizeAdminHtml(rest.marketingDescription) : null,
       category: catRel?.name || 'Uncategorized',
       faqs: (rest.faqs as any[] || []) as any,
       relatedProducts,
       transformations: transformations.map(t => ({
         ...t,
-        createdAt: t.createdAt.toISOString()
+        createdAt: toIsoString(t.createdAt)
       })),
       reviews: product.reviews.map(r => ({
         ...r,
-        createdAt: r.createdAt.toISOString(),
+        createdAt: toIsoString(r.createdAt),
       })),
     }}
   />;
