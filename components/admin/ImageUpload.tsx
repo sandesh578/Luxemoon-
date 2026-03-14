@@ -37,7 +37,16 @@ export function ImageUpload({ images, onChange, maxImages = 5, folder = 'luxemoo
 
             if (!sigRes.ok) throw new Error('Failed to obtain secure upload signature');
 
-            const { signature, timestamp, apiKey, cloudName, folder: signedFolder, resourceType } = await sigRes.json();
+            const {
+                signature,
+                timestamp,
+                apiKey,
+                cloudName,
+                folder: signedFolder,
+                resourceType,
+                allowedFormats,
+                maxFileSize
+            } = await sigRes.json();
 
             // 2. Upload directly to Cloudinary
             const newUrls = await Promise.all(acceptedFiles.map(async (file) => {
@@ -47,6 +56,8 @@ export function ImageUpload({ images, onChange, maxImages = 5, folder = 'luxemoo
                 formData.append('timestamp', timestamp);
                 formData.append('signature', signature);
                 formData.append('folder', signedFolder);
+                formData.append('allowed_formats', Array.isArray(allowedFormats) ? allowedFormats.join(',') : '');
+                formData.append('max_file_size', String(maxFileSize));
 
                 const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`, {
                     method: 'POST',

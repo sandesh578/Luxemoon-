@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { encrypt } from '@/lib/auth-edge';
 import { headers } from 'next/headers';
-import { prisma } from '@/lib/prisma';
-import { logger } from '@/lib/logger';
+import { encrypt } from '@/lib/auth-edge';
 import { validateServerEnv } from '@/lib/env';
+import { logger } from '@/lib/logger';
+import { prisma } from '@/lib/prisma';
 
 export const runtime = 'nodejs';
 
@@ -16,6 +16,41 @@ if (!adminEmail || !adminPass) {
   throw new Error('Missing required environment variables: ADMIN_EMAIL, ADMIN_PASSWORD');
 }
 
+async function safeCountRecentFailedAttempts(ip: string) {
+  try {
+    return await prisma.loginAttempt.count({
+      where: {
+        ip,
+        success: false,
+        createdAt: { gt: new Date(Date.now() - 60 * 1000) },
+      },
+    });
+  } catch (error) {
+    logger.error('Admin login rate-limit check failed', error);
+    return 0;
+  }
+}
+
+async function safeRecordLoginAttempt(ip: string, email: string, success: boolean) {
+  try {
+    await prisma.loginAttempt.create({
+      data: { ip, email: email.substring(0, 50), success },
+    });
+  } catch (error) {
+    logger.error('Admin login attempt log failed', error);
+  }
+}
+
+async function safeClearFailedAttempts(ip: string) {
+  try {
+    await prisma.loginAttempt.deleteMany({
+      where: { ip, success: false },
+    });
+  } catch (error) {
+    logger.error('Admin login failed-attempt cleanup failed', error);
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const { email, password } = await req.json();
@@ -23,14 +58,7 @@ export async function POST(req: Request) {
     const forwardedFor = headersList.get('x-forwarded-for');
     const ip = forwardedFor ? forwardedFor.split(',')[0] : 'unknown';
 
-    // 1. Rate Limiting — count only FAILED attempts in the last minute
-    const recentFailedAttempts = await prisma.loginAttempt.count({
-      where: {
-        ip,
-        success: false,
-        createdAt: { gt: new Date(Date.now() - 60 * 1000) }
-      }
-    });
+    const recentFailedAttempts = await safeCountRecentFailedAttempts(ip);
 
     if (recentFailedAttempts >= 5) {
       logger.warn('Admin login rate limit exceeded', { ip });
@@ -40,27 +68,20 @@ export async function POST(req: Request) {
       );
     }
 
-    // 2. Credential verification
     const isValid = email === adminEmail && password === adminPass;
 
     if (!isValid) {
-      // Log failed attempt
-      await prisma.loginAttempt.create({
-        data: { ip, email: email.substring(0, 50), success: false }
-      });
+      await safeRecordLoginAttempt(ip, email, false);
       logger.warn('Invalid admin login attempt', { ip, email });
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Incorrect admin email or password.' },
+        { status: 401 }
+      );
     }
 
-    // 3. Success — clear failed attempts for this IP, log success
-    await prisma.loginAttempt.deleteMany({
-      where: { ip, success: false }
-    });
-    await prisma.loginAttempt.create({
-      data: { ip, email: email.substring(0, 50), success: true }
-    });
+    await safeClearFailedAttempts(ip);
+    await safeRecordLoginAttempt(ip, email, true);
 
-    // 4. Sign JWT and set cookie on the RESPONSE object
     const token = await encrypt({ email, role: 'admin' });
 
     const response = NextResponse.json({ success: true });
@@ -69,14 +90,16 @@ export async function POST(req: Request) {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
-      maxAge: 60 * 60 * 24, // 24 hours
+      maxAge: 60 * 60 * 24,
     });
 
     logger.info('Admin logged in successfully', { ip });
     return response;
-
   } catch (error) {
     logger.error('Login error', error);
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Admin login is temporarily unavailable. Please try again shortly.' },
+      { status: 500 }
+    );
   }
 }

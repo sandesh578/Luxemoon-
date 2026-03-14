@@ -28,22 +28,22 @@ const getCachedShopData = unstable_cache(
       orderBy = { orderItems: { _count: 'desc' } };
     }
 
-    return Promise.all([
-      prisma.product.findMany({
-        where,
-        select: {
-          id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, isFeatured: true, isNew: true, stock: true,
-        },
-        orderBy,
-      }),
-      prisma.category.findMany({
-        select: { id: true, slug: true, name: true },
-        orderBy: { name: 'asc' },
-      }),
-    ]);
+    const products = await prisma.product.findMany({
+      where,
+      select: {
+        id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, isFeatured: true, isNew: true, stock: true,
+      },
+      orderBy,
+    });
+    const categories = await prisma.category.findMany({
+      select: { id: true, slug: true, name: true },
+      orderBy: { name: 'asc' },
+    });
+
+    return [products, categories] as const;
   },
   ['shop-page-data'],
-  { tags: ['products', 'categories'], revalidate: 60 }
+  { tags: ['products', 'categories'], revalidate: 300 }
 );
 
 export default async function ShopPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {

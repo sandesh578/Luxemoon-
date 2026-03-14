@@ -6,8 +6,18 @@ import type { Metadata } from 'next';
 import { unstable_cache } from 'next/cache';
 import ProductPageClient from './ProductPageClient';
 import { sanitizeAdminHtml } from '@/lib/sanitize-admin-html';
+import { logger } from '@/lib/logger';
 
-export const revalidate = 60;
+export const revalidate = 300;
+
+export async function generateStaticParams() {
+  const products = await prisma.product.findMany({
+    where: { isActive: true, isArchived: false, isDraft: false },
+    select: { slug: true },
+  });
+
+  return products.map((product) => ({ slug: product.slug }));
+}
 
 function toIsoString(value: Date | string) {
   return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
@@ -43,7 +53,42 @@ const getProduct = unstable_cache(
     });
   },
   ['product-detail'],
-  { tags: ['products', 'reviews', 'transformations'], revalidate: 60 }
+  { tags: ['products', 'reviews', 'transformations'], revalidate: 300 }
+);
+
+const getUnavailableSuggestions = unstable_cache(
+  async () => {
+    return prisma.product.findMany({
+      where: { isActive: true, isArchived: false, isDraft: false },
+      select: { id: true, slug: true, name: true, priceInside: true, originalPrice: true, images: true },
+      take: 4,
+      orderBy: { orderItems: { _count: 'desc' } }
+    });
+  },
+  ['unavailable-product-suggestions'],
+  { tags: ['products'], revalidate: 300 }
+);
+
+const getRelatedProducts = unstable_cache(
+  async (productId: string, categoryId: string | null) => {
+    if (!categoryId) return [];
+
+    return prisma.product.findMany({
+      where: { categoryId, isActive: true, isArchived: false, isDraft: false, NOT: { id: productId } },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        priceInside: true,
+        originalPrice: true,
+        images: true,
+      },
+      take: 2,
+      orderBy: { stock: 'desc' }
+    });
+  },
+  ['related-products'],
+  { tags: ['products'], revalidate: 300 }
 );
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -74,6 +119,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 }
 
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
+  const startedAt = Date.now();
   const { slug } = await params;
   const product = await getProduct(slug);
 
@@ -81,12 +127,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
   // Phase 5: Graceful No Longer Available view
   if (!product.isActive || product.isArchived || product.isDraft) {
-    const suggestedProducts = await prisma.product.findMany({
-      where: { isActive: true, isArchived: false, isDraft: false },
-      select: { id: true, slug: true, name: true, priceInside: true, originalPrice: true, images: true },
-      take: 4,
-      orderBy: { orderItems: { _count: 'desc' } }
-    });
+    const suggestedProducts = await getUnavailableSuggestions();
 
     return (
       <div className="min-h-[80vh] bg-[#FDFCFB] flex flex-col items-center justify-center py-24 px-4 text-center">
@@ -113,19 +154,14 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   }
 
   const { createdAt, updatedAt, categoryId, category: catRel, transformations, ...rest } = product;
+  const relatedProducts = await getRelatedProducts(product.id, categoryId);
 
-  const relatedProducts = await prisma.product.findMany({
-    where: { categoryId: categoryId, isActive: true, isArchived: false, isDraft: false, NOT: { id: product.id } },
-    select: {
-      id: true,
-      slug: true,
-      name: true,
-      priceInside: true,
-      originalPrice: true,
-      images: true,
-    },
-    take: 2,
-    orderBy: { stock: 'desc' }
+  logger.info('page.product.rendered', {
+    slug,
+    durationMs: Date.now() - startedAt,
+    reviewCount: product.reviews.length,
+    transformationCount: transformations.length,
+    relatedCount: relatedProducts.length,
   });
 
   return <ProductPageClient

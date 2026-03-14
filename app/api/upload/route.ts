@@ -25,14 +25,20 @@ function getClientIp(headersList: Headers): string {
 }
 
 async function enforceRateLimit(ip: string, marker: string, limit: number) {
-  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-  const count = await prisma.loginAttempt.count({
-    where: {
-      ip,
-      email: marker,
-      createdAt: { gt: oneHourAgo },
-    },
-  });
+  let count = 0;
+
+  try {
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    count = await prisma.loginAttempt.count({
+      where: {
+        ip,
+        email: marker,
+        createdAt: { gt: oneHourAgo },
+      },
+    });
+  } catch {
+    return;
+  }
 
   if (count >= limit) {
     throw new Error("RATE_LIMITED");
@@ -40,13 +46,17 @@ async function enforceRateLimit(ip: string, marker: string, limit: number) {
 }
 
 async function recordUploadAttempt(ip: string, marker: string) {
-  await prisma.loginAttempt.create({
-    data: {
-      ip,
-      email: marker,
-      success: true,
-    },
-  });
+  try {
+    await prisma.loginAttempt.create({
+      data: {
+        ip,
+        email: marker,
+        success: true,
+      },
+    });
+  } catch {
+    // Upload signatures should still work when telemetry storage is unavailable.
+  }
 }
 
 export async function POST(req: Request) {
@@ -91,8 +101,6 @@ export async function POST(req: Request) {
       timestamp,
       folder,
       allowed_formats: allowedFormats,
-      max_file_size: maxFileSize,
-      resource_type: resourceType,
     };
 
     const signature = cloudinary.utils.api_sign_request(signatureParams, apiSecret);
@@ -142,4 +150,3 @@ export async function POST(req: Request) {
     );
   }
 }
-

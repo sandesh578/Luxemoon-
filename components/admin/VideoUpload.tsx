@@ -52,7 +52,16 @@ export function VideoUpload({ videoUrl, onChange }: VideoUploadProps) {
 
             if (!sigRes.ok) throw new Error('Failed to obtain secure upload signature');
 
-            const { signature, timestamp, apiKey, cloudName, folder, resourceType } = await sigRes.json();
+            const {
+                signature,
+                timestamp,
+                apiKey,
+                cloudName,
+                folder,
+                resourceType,
+                allowedFormats,
+                maxFileSize
+            } = await sigRes.json();
 
             // 2. Upload directly to Cloudinary
             const file = acceptedFiles[0];
@@ -62,6 +71,8 @@ export function VideoUpload({ videoUrl, onChange }: VideoUploadProps) {
             formData.append('timestamp', timestamp);
             formData.append('signature', signature);
             formData.append('folder', folder);
+            formData.append('allowed_formats', Array.isArray(allowedFormats) ? allowedFormats.join(',') : '');
+            formData.append('max_file_size', String(maxFileSize));
 
             const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`, {
                 method: 'POST',

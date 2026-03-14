@@ -9,24 +9,22 @@ export default async function AdminDashboard() {
   const [orders, statusCounts, revenueStats] = await Promise.all([
     prisma.order.findMany({
       orderBy: { createdAt: 'desc' },
+      take: 200,
       select: {
         id: true,
         customerName: true,
         phone: true,
         province: true,
         district: true,
-        address: true,
         isInsideValley: true,
         total: true,
         status: true,
         rejectionReason: true,
-        trackingNumber: true,
-        courierName: true,
         paymentReceived: true,
-        adminNotes: true,
         createdAt: true,
         updatedAt: true,
         items: {
+          take: 3,
           select: {
             id: true,
             quantity: true,
@@ -36,15 +34,9 @@ export default async function AdminDashboard() {
             },
           },
         },
-        notifications: {
-          orderBy: { sentAt: 'desc' as const },
-          take: 5,
+        _count: {
           select: {
-            id: true,
-            type: true,
-            status: true,
-            errorMessage: true,
-            sentAt: true,
+            items: true,
           },
         },
       },

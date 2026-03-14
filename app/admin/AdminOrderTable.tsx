@@ -42,17 +42,25 @@ interface Order {
   status: string;
   isInsideValley: boolean;
   items: AdminOrderItem[];
-  notifications: Notification[];
   updatedAt: Date | string;
   rejectionReason?: string | null;
-  trackingNumber?: string | null;
-  courierName?: string | null;
   province: string;
   district: string;
-  address: string;
   paymentReceived: boolean;
-  adminNotes: string | null;
   createdAt: Date | string;
+  _count: {
+    items: number;
+  };
+}
+
+interface OrderDetails {
+  id: string;
+  address: string;
+  trackingNumber?: string | null;
+  courierName?: string | null;
+  adminNotes: string | null;
+  items: AdminOrderItem[];
+  notifications: Notification[];
 }
 
 const PAGE_SIZE_OPTIONS = [50, 100, 250, 500] as const;
@@ -85,6 +93,8 @@ export const AdminOrderTable = ({ orders }: { orders: Order[] }) => {
   const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(100);
   const [expandedOrderIds, setExpandedOrderIds] = useState<Set<string>>(new Set());
   const [expandedDayKeys, setExpandedDayKeys] = useState<Set<string>>(new Set());
+  const [detailsByOrderId, setDetailsByOrderId] = useState<Record<string, OrderDetails>>({});
+  const [detailsLoadingId, setDetailsLoadingId] = useState<string | null>(null);
   const [confirmAction, setConfirmAction] = useState<{ orderId: string; status: string; phone: string; updatedAt: Date } | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const [trackingInput, setTrackingInput] = useState<Record<string, { tracking: string; courier: string }>>({});
@@ -195,13 +205,35 @@ export const AdminOrderTable = ({ orders }: { orders: Order[] }) => {
     });
   };
 
-  const toggleOrderDetails = (orderId: string) => {
+  const toggleOrderDetails = async (orderId: string) => {
+    const isCurrentlyExpanded = expandedOrderIds.has(orderId);
     setExpandedOrderIds(prev => {
       const next = new Set(prev);
       if (next.has(orderId)) next.delete(orderId);
       else next.add(orderId);
       return next;
     });
+
+    if (isCurrentlyExpanded || detailsByOrderId[orderId] || detailsLoadingId === orderId) {
+      return;
+    }
+
+    setDetailsLoadingId(orderId);
+    try {
+      const res = await fetch(`/api/admin/orders/${orderId}`, { cache: 'no-store' });
+      if (!res.ok) throw new Error('Failed to load order details');
+      const data = await res.json();
+      setDetailsByOrderId(prev => ({ ...prev, [orderId]: data }));
+    } catch {
+      toast.error('Failed to load order details');
+      setExpandedOrderIds(prev => {
+        const next = new Set(prev);
+        next.delete(orderId);
+        return next;
+      });
+    } finally {
+      setDetailsLoadingId(null);
+    }
   };
 
   const expandAllDays = () => {
@@ -350,6 +382,7 @@ export const AdminOrderTable = ({ orders }: { orders: Order[] }) => {
                 <div className="divide-y divide-stone-100">
                   {group.orders.map(order => {
                     const isExpanded = expandedOrderIds.has(order.id);
+                    const detail = detailsByOrderId[order.id];
                     const createdAt = new Date(order.createdAt);
                     const updatedAt = new Date(order.updatedAt);
                     return (
@@ -374,13 +407,13 @@ export const AdminOrderTable = ({ orders }: { orders: Order[] }) => {
                           </div>
 
                           <div className="md:col-span-3 space-y-1">
-                            {order.items.slice(0, 3).map((item) => (
+                            {order.items.map((item) => (
                               <div key={item.id} className="text-xs text-stone-600">
                                 <span className="font-bold">{item.quantity}x</span> {item.product.name}
                               </div>
                             ))}
-                            {order.items.length > 3 && (
-                              <div className="text-xs text-stone-400">+{order.items.length - 3} more items</div>
+                            {order._count.items > order.items.length && (
+                              <div className="text-xs text-stone-400">+{order._count.items - order.items.length} more items</div>
                             )}
                           </div>
 
@@ -404,10 +437,10 @@ export const AdminOrderTable = ({ orders }: { orders: Order[] }) => {
                           <div className="md:col-span-2 space-y-2">
                             <button
                               type="button"
-                              onClick={() => toggleOrderDetails(order.id)}
+                              onClick={() => void toggleOrderDetails(order.id)}
                               className="w-full text-xs font-semibold rounded-lg px-3 py-2 border border-stone-200 bg-white hover:border-amber-400 transition-colors"
                             >
-                              {isExpanded ? 'Hide Details' : 'View Details'}
+                              {detailsLoadingId === order.id ? 'Loading...' : isExpanded ? 'Hide Details' : 'View Details'}
                             </button>
 
                             <button
@@ -433,10 +466,17 @@ export const AdminOrderTable = ({ orders }: { orders: Order[] }) => {
 
                         {isExpanded && (
                           <div className="mt-4 bg-stone-50 border border-stone-200 rounded-2xl p-4 md:p-5 space-y-5 animate-in fade-in duration-200">
+                            {!detail ? (
+                              <div className="flex items-center gap-2 text-sm text-stone-500">
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Loading order details...
+                              </div>
+                            ) : (
+                              <>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                               <div className="space-y-2">
                                 <h4 className="text-xs font-bold text-stone-700 uppercase flex items-center gap-1"><Package className="w-3 h-3" /> Shipping</h4>
-                                <p className="text-xs text-stone-700 leading-relaxed">{order.address}</p>
+                                <p className="text-xs text-stone-700 leading-relaxed">{detail.address}</p>
                                 <p className="text-xs text-stone-500">{order.district}, {order.province}</p>
                                 {order.rejectionReason && (
                                   <div className="flex items-start gap-1 text-xs text-red-700 bg-red-50 p-2 rounded-lg border border-red-100">
@@ -450,24 +490,24 @@ export const AdminOrderTable = ({ orders }: { orders: Order[] }) => {
                                 <h4 className="text-xs font-bold text-stone-700 uppercase flex items-center gap-1"><Truck className="w-3 h-3" /> Tracking</h4>
                                 <input
                                   placeholder="Tracking Number"
-                                  value={trackingInput[order.id]?.tracking ?? order.trackingNumber ?? ''}
+                                  value={trackingInput[order.id]?.tracking ?? detail.trackingNumber ?? ''}
                                   onChange={e => setTrackingInput(prev => ({
                                     ...prev,
                                     [order.id]: {
                                       tracking: e.target.value,
-                                      courier: prev[order.id]?.courier ?? order.courierName ?? '',
+                                      courier: prev[order.id]?.courier ?? detail.courierName ?? '',
                                     }
                                   }))}
                                   className="w-full p-2 text-xs border border-stone-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-200"
                                 />
                                 <input
                                   placeholder="Courier Name"
-                                  value={trackingInput[order.id]?.courier ?? order.courierName ?? ''}
+                                  value={trackingInput[order.id]?.courier ?? detail.courierName ?? ''}
                                   onChange={e => setTrackingInput(prev => ({
                                     ...prev,
                                     [order.id]: {
                                       courier: e.target.value,
-                                      tracking: prev[order.id]?.tracking ?? order.trackingNumber ?? '',
+                                      tracking: prev[order.id]?.tracking ?? detail.trackingNumber ?? '',
                                     }
                                   }))}
                                   className="w-full p-2 text-xs border border-stone-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-200"
@@ -478,9 +518,9 @@ export const AdminOrderTable = ({ orders }: { orders: Order[] }) => {
                                 <h4 className="text-xs font-bold text-stone-700 uppercase">Internal Notes</h4>
                                 <textarea
                                   placeholder="Admin notes (Internal only)"
-                                  defaultValue={order.adminNotes || ''}
+                                  defaultValue={detail.adminNotes || ''}
                                   onBlur={async (e) => {
-                                    if (e.target.value !== (order.adminNotes || '')) {
+                                    if (e.target.value !== (detail.adminNotes || '')) {
                                       const res = await updateAdminNotes(order.id, e.target.value);
                                       if (res.success) {
                                         toast.success('Admin notes updated');
@@ -498,7 +538,7 @@ export const AdminOrderTable = ({ orders }: { orders: Order[] }) => {
                             <div className="pt-1">
                               <h4 className="text-xs font-bold text-stone-700 uppercase mb-2">All Items</h4>
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                {order.items.map(item => (
+                                {detail.items.map(item => (
                                   <div key={item.id} className="text-xs bg-white border border-stone-200 rounded-lg p-2 flex items-center justify-between gap-2">
                                     <span className="text-stone-700 truncate">{item.product.name}</span>
                                     <span className="font-semibold text-stone-900 whitespace-nowrap">{item.quantity}x NPR {item.price.toLocaleString()}</span>
@@ -545,10 +585,10 @@ export const AdminOrderTable = ({ orders }: { orders: Order[] }) => {
                               </div>
 
                               <div className="space-y-2">
-                                {!order.notifications || order.notifications.length === 0 ? (
+                                {!detail.notifications || detail.notifications.length === 0 ? (
                                   <p className="text-[10px] text-stone-400 italic">No notifications sent yet.</p>
                                 ) : (
-                                  order.notifications.map((notif) => (
+                                  detail.notifications.map((notif) => (
                                     <div key={notif.id} className="flex flex-wrap items-center justify-between gap-2 text-[10px] bg-white p-2 rounded border border-stone-200">
                                       <div className="flex items-center gap-2">
                                         {notif.type === 'SMS' ? <MessageSquare className="w-3 h-3 text-amber-500" /> : <Mail className="w-3 h-3 text-blue-500" />}
@@ -570,6 +610,8 @@ export const AdminOrderTable = ({ orders }: { orders: Order[] }) => {
                                 )}
                               </div>
                             </div>
+                              </>
+                            )}
                           </div>
                         )}
                       </article>

@@ -16,6 +16,8 @@ function getClientIp(headersList: Headers): string {
 
 export async function POST(req: Request) {
     try {
+        const body = await req.json();
+        const data = ReviewSchema.parse(body);
         const headersList = await headers();
         const ip = getClientIp(headersList);
 
@@ -34,9 +36,6 @@ export async function POST(req: Request) {
                 { status: 429 }
             );
         }
-
-        const body = await req.json();
-        const data = ReviewSchema.parse(body);
 
         // Verify product exists
         const product = await prisma.product.findUnique({

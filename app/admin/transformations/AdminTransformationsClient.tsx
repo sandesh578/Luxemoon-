@@ -66,6 +66,8 @@ export default function AdminTransformationsClient({
             uploadData.append('timestamp', sigData.timestamp);
             uploadData.append('api_key', sigData.apiKey);
             uploadData.append('folder', sigData.folder);
+            uploadData.append('allowed_formats', Array.isArray(sigData.allowedFormats) ? sigData.allowedFormats.join(',') : '');
+            uploadData.append('max_file_size', String(sigData.maxFileSize));
 
             const res = await fetch(`https://api.cloudinary.com/v1_1/${sigData.cloudName}/${sigData.resourceType}/upload`, {
                 method: 'POST',

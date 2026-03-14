@@ -108,6 +108,8 @@ model Product {
   @@index([isDeleted])
   @@index([isActive])
   @@index([isArchived])
+  @@index([isActive, isArchived, isDraft, createdAt])
+  @@index([categoryId, isActive, isArchived, isDraft, stock])
 }
 
 model Order {
@@ -151,6 +153,7 @@ model Order {
   @@index([phone])
   @@index([createdAt])
   @@index([couponId])
+  @@index([status, createdAt])
 }
 
 model OrderItem {
@@ -189,6 +192,7 @@ model Review {
   @@index([isFeatured])
   @@index([isHidden])
   @@index([ipAddress, createdAt])
+  @@index([productId, approved, isHidden, createdAt])
 }
 
 model Transformation {
@@ -206,6 +210,7 @@ model Transformation {
 
   @@index([productId])
   @@index([isFeatured])
+  @@index([productId, createdAt])
 }
 
 model Coupon {
@@ -256,6 +261,7 @@ model NotificationLog {
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
+  @@index([orderId, sentAt])
 }
 
 model SiteConfig {

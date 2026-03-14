@@ -12,51 +12,51 @@ export const revalidate = 120;
 
 const getCachedHomepageData = unstable_cache(
   async () => {
-    return Promise.all([
-      prisma.homepageContent.findUnique({ where: { id: 1 } }),
-      prisma.product.findMany({
-        where: { isActive: true, isArchived: false, isDraft: false, isFeatured: true },
-        select: {
-          id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, isFeatured: true, discountPercent: true
+    const content = await prisma.homepageContent.findUnique({ where: { id: 1 } });
+    const featuredProducts = await prisma.product.findMany({
+      where: { isActive: true, isArchived: false, isDraft: false, isFeatured: true },
+      select: {
+        id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, isFeatured: true, discountPercent: true
+      },
+      take: 4,
+      orderBy: { createdAt: 'desc' },
+    });
+    const newArrivals = await prisma.product.findMany({
+      where: { isActive: true, isArchived: false, isDraft: false, isNew: true },
+      select: {
+        id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, isNew: true, discountPercent: true
+      },
+      take: 4,
+      orderBy: { createdAt: 'desc' },
+    });
+    const bestSellers = await prisma.product.findMany({
+      where: { isActive: true, isArchived: false, isDraft: false },
+      select: {
+        id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, discountPercent: true
+      },
+      take: 4,
+      orderBy: { orderItems: { _count: 'desc' } },
+    });
+    const nanoplastiaProducts = await prisma.product.findMany({
+      where: {
+        isActive: true,
+        isArchived: false,
+        isDraft: false,
+        slug: {
+          in: ['anti-hair-fall-shampoo', 'shining-silk-hair-mask', 'soft-silky-serum'],
         },
-        take: 4,
-        orderBy: { createdAt: 'desc' },
-      }),
-      prisma.product.findMany({
-        where: { isActive: true, isArchived: false, isDraft: false, isNew: true },
-        select: {
-          id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, isNew: true, discountPercent: true
-        },
-        take: 4,
-        orderBy: { createdAt: 'desc' },
-      }),
-      prisma.product.findMany({
-        where: { isActive: true, isArchived: false, isDraft: false },
-        select: {
-          id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, discountPercent: true
-        },
-        take: 4,
-        orderBy: { orderItems: { _count: 'desc' } },
-      }),
-      prisma.product.findMany({
-        where: {
-          isActive: true,
-          isArchived: false,
-          isDraft: false,
-          slug: {
-            in: ['anti-hair-fall-shampoo', 'shining-silk-hair-mask', 'soft-silky-serum'],
-          },
-        },
-        select: {
-          id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, isNew: true, stock: true, discountPercent: true
-        },
-        take: 3,
-        orderBy: { createdAt: 'asc' },
-      }),
-    ]);
+      },
+      select: {
+        id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, isNew: true, stock: true, discountPercent: true
+      },
+      take: 3,
+      orderBy: { createdAt: 'asc' },
+    });
+
+    return [content, featuredProducts, newArrivals, bestSellers, nanoplastiaProducts] as const;
   },
   ['home-page-data'],
-  { tags: ['products', 'homepage-content'], revalidate: 120 }
+  { tags: ['products', 'homepage-content'], revalidate: 300 }
 );
 
 export default async function Home() {
@@ -169,8 +169,8 @@ export default async function Home() {
                         <span className="text-stone-500 line-through text-sm">{t('common.currency')} {p.originalPrice.toLocaleString()}</span>
                       )}
                     </div>
-                    <div className="w-full max-w-xs opacity-0 -translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 pointer-events-none group-hover:pointer-events-auto">
-                      <QuickAddButton product={p} />
+                    <div className="w-full max-w-xs transition-all duration-300 opacity-100 translate-y-0 lg:opacity-0 lg:-translate-y-4 pointer-events-auto lg:pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto">
+                      <QuickAddButton product={p} className="w-full py-3 bg-amber-600 text-white text-sm font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-amber-500 transition-colors shadow-lg shadow-amber-900/20 active:scale-[0.98]" />
                     </div>
                   </div>
                 );
