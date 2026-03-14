@@ -9,14 +9,22 @@ import { sanitizeAdminHtml } from '@/lib/sanitize-admin-html';
 import { logger } from '@/lib/logger';
 
 export const revalidate = 300;
+export const dynamicParams = true;
 
 export async function generateStaticParams() {
-  const products = await prisma.product.findMany({
-    where: { isActive: true, isArchived: false, isDraft: false },
-    select: { slug: true },
-  });
+  try {
+    const products = await prisma.product.findMany({
+      where: { isActive: true, isArchived: false, isDraft: false },
+      select: { slug: true },
+    });
 
-  return products.map((product) => ({ slug: product.slug }));
+    return products.map((product) => ({ slug: product.slug }));
+  } catch (error) {
+    logger.warn('page.product.generateStaticParams.failed', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return [];
+  }
 }
 
 function toIsoString(value: Date | string) {
