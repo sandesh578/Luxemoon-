@@ -440,21 +440,25 @@ export default function ProductPageClient({ product }: { product: ProductData })
 
                             {activeTab === 'faq' && (
                                 <div className="space-y-4">
-                                    {product.faqs && product.faqs.length > 0 ? (
-                                        product.faqs.map((faq, i) => (
-                                            <details key={i} className="group bg-white border border-stone-100 rounded-xl overflow-hidden shadow-sm">
-                                                <summary className="p-4 flex justify-between items-center cursor-pointer font-bold text-sm text-stone-900 list-none">
-                                                    <span className="flex items-center gap-2">
-                                                        <HelpCircle className="w-4 h-4 text-amber-600" />
-                                                        {faq.q || faq.question}
-                                                    </span>
-                                                    <Plus className="w-4 h-4 group-open:rotate-45 transition-transform" />
-                                                </summary>
-                                                <div className="px-4 pb-4 pt-0 text-sm text-stone-600 leading-relaxed border-t border-stone-50">
-                                                    {faq.a || faq.answer}
-                                                </div>
-                                            </details>
-                                        ))
+                                    {product.faqs && Array.isArray(product.faqs) && product.faqs.length > 0 ? (
+                                        product.faqs.map((faq, i) => {
+                                            const question = String(faq.q || faq.question || 'FAQ');
+                                            const answer = String(faq.a || faq.answer || '');
+                                            return (
+                                                <details key={i} className="group bg-white border border-stone-100 rounded-xl overflow-hidden shadow-sm">
+                                                    <summary className="p-4 flex justify-between items-center cursor-pointer font-bold text-sm text-stone-900 list-none">
+                                                        <span className="flex items-center gap-2">
+                                                            <HelpCircle className="w-4 h-4 text-amber-600" />
+                                                            {question}
+                                                        </span>
+                                                        <Plus className="w-4 h-4 group-open:rotate-45 transition-transform" />
+                                                    </summary>
+                                                    <div className="px-4 pb-4 pt-0 text-sm text-stone-600 leading-relaxed border-t border-stone-50">
+                                                        {answer}
+                                                    </div>
+                                                </details>
+                                            );
+                                        })
                                     ) : (
                                         <p className="text-stone-400 text-sm italic">No FAQs available for this product yet.</p>
                                     )}

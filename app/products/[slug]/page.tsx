@@ -64,15 +64,18 @@ const getProduct = unstable_cache(
 
     if (!data) return null;
 
+    // Deep serialize to catch any nested Decimals or Dates (e.g. in JSON fields like faqs)
+    // and override specific fields to ensure they are the correct type
+    const serialized = JSON.parse(JSON.stringify(data));
+
     return {
-        ...data,
+        ...serialized,
         priceInside: Number(data.priceInside),
         priceOutside: Number(data.priceOutside),
         originalPrice: data.originalPrice ? Number(data.originalPrice) : null,
-        reviews: data.reviews.map(r => ({ ...r, createdAt: r.createdAt.toISOString() })),
-        transformations: data.transformations.map(t => ({ ...t, createdAt: t.createdAt.toISOString() })),
+        reviews: serialized.reviews.map((r: any) => ({ ...r, createdAt: r.createdAt })),
+        transformations: serialized.transformations.map((t: any) => ({ ...t, createdAt: t.createdAt })),
         category: data.category?.name || 'Uncategorized',
-        // Ensure Dates are serializable
         createdAt: data.createdAt.toISOString(),
         updatedAt: data.updatedAt.toISOString(),
         deletedAt: data.deletedAt?.toISOString() || null,
@@ -92,7 +95,8 @@ const getUnavailableSuggestions = unstable_cache(
       take: 4,
       orderBy: { orderItems: { _count: 'desc' } }
     });
-    return products.map(p => ({
+    
+    return JSON.parse(JSON.stringify(products)).map((p: any) => ({
         ...p,
         priceInside: Number(p.priceInside),
         originalPrice: p.originalPrice ? Number(p.originalPrice) : null,
@@ -120,7 +124,7 @@ const getRelatedProducts = unstable_cache(
       orderBy: { stock: 'desc' }
     });
 
-    return related.map(r => ({
+    return JSON.parse(JSON.stringify(related)).map((r: any) => ({
         ...r,
         priceInside: Number(r.priceInside),
         originalPrice: r.originalPrice ? Number(r.originalPrice) : null,
@@ -180,7 +184,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         <p className="text-stone-500 max-w-lg mb-12">The product you are looking for is currently unavailable or has been archived. Check out our featured products below.</p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto w-full text-left">
-          {suggestedProducts.map(p => (
+          {suggestedProducts.map((p: any) => (
             <Link key={p.id} href={`/products/${p.slug}`} className="group cursor-pointer block">
               <div className="relative aspect-[3/4] overflow-hidden rounded-3xl bg-stone-100 mb-4">
                 {p.images[0] && (
@@ -216,11 +220,11 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       category: catStr,
       faqs: (Array.isArray(rest.faqs) ? rest.faqs : []) as any,
       relatedProducts,
-      transformations: transformations.map(t => ({
+      transformations: transformations.map((t: any) => ({
         ...t,
         createdAt: toIsoString(t.createdAt)
       })),
-      reviews: product.reviews.map(r => ({
+      reviews: product.reviews.map((r: any) => ({
         ...r,
         createdAt: toIsoString(r.createdAt),
       })),
