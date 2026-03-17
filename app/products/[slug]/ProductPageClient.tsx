@@ -7,6 +7,7 @@ import { ShieldCheck, Star, Minus, Plus, ShoppingBag, ChevronLeft, ChevronRight,
 import { useCart, useLocationContext, useConfig } from '@/components/Providers';
 import { OptimizedImage as Image } from '@/components/OptimizedImage';
 import { optimizeImage } from '@/lib/image';
+import { formatCurrency } from '@/lib/currency';
 import { toast } from 'sonner';
 import { QuickAddButton } from '@/components/QuickAddButton';
 
@@ -88,6 +89,8 @@ function getVideoEmbed(url: string): string | null {
     return null;
 }
 
+import { calculateDiscountedPrice } from '@/lib/settings';
+
 export default function ProductPageClient({ product }: { product: ProductData }) {
     const [selectedImage, setSelectedImage] = useState(0);
     const [quantity, setQuantity] = useState(1);
@@ -142,8 +145,10 @@ export default function ProductPageClient({ product }: { product: ProductData })
     const { addToCart } = useCart();
     const { isInsideValley } = useLocationContext();
     const config = useConfig();
+    const formatPrice = (amount: number) => formatCurrency(amount, config.currencyCode);
 
-    const price = isInsideValley ? product.priceInside : product.priceOutside;
+    const basePrice = isInsideValley ? product.priceInside : product.priceOutside;
+    const price = calculateDiscountedPrice(basePrice, product as any, config as any);
     const { reviews } = product;
     const derivedDiscount = product.discountPercent && product.discountPercent > 0
         ? product.discountPercent
@@ -179,7 +184,7 @@ export default function ProductPageClient({ product }: { product: ProductData })
         try {
             setCartError(null);
             addToCart(product as any, quantity);
-            toast.success('Added to bag!');
+            toast.success('Added to cart!');
         } catch {
             const msg = "We couldn't add this item. Please refresh and try again.";
             setCartError(msg);
@@ -330,9 +335,9 @@ export default function ProductPageClient({ product }: { product: ProductData })
                     </div>
 
                     <div className="flex items-baseline gap-3">
-                        <span className="text-4xl font-bold text-stone-900">NPR {price.toLocaleString()}</span>
+                        <span className="text-4xl font-bold text-stone-900">{formatPrice(price)}</span>
                         {product.originalPrice && product.originalPrice > price && (
-                            <span className="text-lg text-stone-400 line-through">NPR {product.originalPrice.toLocaleString()}</span>
+                            <span className="text-lg text-stone-400 line-through">{formatPrice(product.originalPrice)}</span>
                         )}
                         {derivedDiscount > 0 && (
                             <span className="text-sm font-bold text-amber-700 bg-amber-50 px-2 py-1 border border-amber-200 shadow-sm rounded-md">
@@ -341,9 +346,11 @@ export default function ProductPageClient({ product }: { product: ProductData })
                         )}
                     </div>
                     <div className="flex flex-wrap gap-3">
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold border ${product.stock > 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-red-50 text-red-700 border-red-100'}`}>
-                            {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
-                        </span>
+                        {config.showStockOnProduct && (
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold border ${product.stock > 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-red-50 text-red-700 border-red-100'}`}>
+                                {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
+                            </span>
+                        )}
                         {product.weight && (
                             <span className="px-3 py-1 rounded-full text-xs font-bold border bg-white text-stone-600 border-stone-200">
                                 {product.weight}
@@ -465,23 +472,23 @@ export default function ProductPageClient({ product }: { product: ProductData })
                                     <span>{cartError}</span>
                                 </div>
                             )}
-                            <div className="flex items-center gap-4">
-                                <div className="flex items-center border border-stone-200 rounded-xl bg-white">
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                                <div className="flex items-center justify-center border border-stone-200 rounded-xl bg-white">
                                     <button type="button" onClick={() => setQuantity(Math.max(1, quantity - 1))} className="p-3 hover:bg-stone-50"><Minus className="w-4 h-4" /></button>
                                     <span className="px-4 font-bold text-lg">{quantity}</span>
                                     <button type="button" onClick={() => setQuantity(Math.min(product.stock, quantity + 1))} className="p-3 hover:bg-stone-50"><Plus className="w-4 h-4" /></button>
                                 </div>
                                 <button
                                     onClick={handleAddToCart}
-                                    className="flex-1 py-4 bg-gradient-to-r from-[#5C3A21] to-[#C7782A] text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-all shadow-xl shadow-amber-200/40 hover:shadow-2xl hover:-translate-y-0.5 active:scale-[0.98]"
+                                    className="flex-1 min-w-0 py-4 px-6 bg-gradient-to-r from-[#5C3A21] to-[#C7782A] text-white font-bold rounded-2xl flex items-center justify-center gap-2 whitespace-nowrap transition-all shadow-xl shadow-amber-200/40 hover:shadow-2xl hover:-translate-y-0.5 active:scale-[0.98]"
                                 >
-                                    <ShoppingBag className="w-5 h-5" /> ADD TO BAG
+                                    <ShoppingBag className="w-5 h-5" /> ADD TO CART
                                 </button>
                             </div>
                             {/* Trust Microcopy */}
                             <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-stone-500 font-medium">
                                 <span className="flex items-center gap-1"><ShieldCheck className="w-3 h-3 text-green-600" /> Authentic Korean Formula</span>
-                                <span className="flex items-center gap-1"><Truck className="w-3 h-3 text-amber-600" /> Free Delivery over NPR {config.freeDeliveryThreshold.toLocaleString()}</span>
+                                <span className="flex items-center gap-1"><Truck className="w-3 h-3 text-amber-600" /> Free Delivery over {formatPrice(config.freeDeliveryThreshold)}</span>
                                 <span>COD Available</span>
                             </div>
                         </div>
@@ -525,7 +532,7 @@ export default function ProductPageClient({ product }: { product: ProductData })
                                             <Image src={optimizeImage(rp.images[0])} alt={rp.name} fill sizes="(max-width:768px) 100vw, 33vw" className="object-cover" />
                                         </div>
                                         <h4 className="font-bold text-stone-900 text-sm line-clamp-2">{rp.name}</h4>
-                                        <p className="text-sm text-stone-600 mt-1">NPR {rp.priceInside.toLocaleString()}</p>
+                                        <p className="text-sm text-stone-600 mt-1">{formatPrice(rp.priceInside)}</p>
                                     </Link>
                                     <div className="mt-3">
                                         <QuickAddButton product={{ ...rp, category: product.category, priceOutside: rp.priceInside, description: '', features: [], stock: 99 }} />
@@ -659,14 +666,16 @@ export default function ProductPageClient({ product }: { product: ProductData })
                 </section>
             )}
 
-            <ProductReviewsSection productId={product.id} reviews={reviews} />
+            <div className="mt-24">
+                <ProductReviewsSection productId={product.id} reviews={reviews} />
+            </div>
 
             {product.stock > 0 && showDesktopStickyBuy && (
                 <div className="hidden lg:block fixed bottom-5 left-1/2 -translate-x-1/2 z-50">
                     <div className="bg-white/95 backdrop-blur-xl border border-stone-200 rounded-2xl shadow-2xl px-5 py-3 flex items-center gap-5">
                         <div>
                             <p className="text-xs text-stone-500">{product.name}</p>
-                            <p className="font-bold text-stone-900">NPR {price.toLocaleString()}</p>
+                            <p className="font-bold text-stone-900">{formatPrice(price)}</p>
                         </div>
                         <div className="flex items-center border border-stone-200 rounded-xl bg-white">
                             <button type="button" onClick={() => setQuantity(Math.max(1, quantity - 1))} className="p-2 hover:bg-stone-50"><Minus className="w-4 h-4" /></button>
@@ -676,9 +685,9 @@ export default function ProductPageClient({ product }: { product: ProductData })
                         <button
                             type="button"
                             onClick={handleAddToCart}
-                            className="px-6 py-3 bg-gradient-to-r from-[#5C3A21] to-[#C7782A] text-white font-bold rounded-xl flex items-center gap-2 hover:-translate-y-0.5 transition-transform"
+                            className="px-6 py-3 bg-gradient-to-r from-[#5C3A21] to-[#C7782A] text-white font-bold rounded-xl flex items-center gap-2 whitespace-nowrap hover:-translate-y-0.5 transition-transform"
                         >
-                            <ShoppingBag className="w-4 h-4" /> Add to Bag
+                            <ShoppingBag className="w-4 h-4" /> Add to Cart
                         </button>
                     </div>
                 </div>
@@ -691,7 +700,7 @@ export default function ProductPageClient({ product }: { product: ProductData })
                         onClick={handleAddToCart}
                         className="w-full py-4 bg-gradient-to-r from-[#5C3A21] to-[#C7782A] text-white font-bold rounded-2xl flex items-center justify-center gap-3 shadow-xl active:scale-95 transition-transform"
                     >
-                        <ShoppingBag className="w-5 h-5" /> ADD TO BAG — NPR {price.toLocaleString()}
+                        <ShoppingBag className="w-5 h-5" /> ADD TO CART - {formatPrice(price)}
                     </button>
                 </div>
             )}

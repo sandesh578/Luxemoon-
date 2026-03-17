@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { DEFAULT_LOCALE, type Locale, LOCALE_COOKIE_NAME, isLocale, translate } from '@/lib/i18n';
+import { calculateDiscountedPrice } from '@/lib/settings';
 
 // Types
 export interface Product {
@@ -35,6 +36,11 @@ export interface SiteConfig {
   storeName: string;
   bannerText: string;
   logoUrl?: string | null;
+  faviconUrl?: string | null;
+  languageToggleEnabled: boolean;
+  showStockOnProduct: boolean;
+  currencyCode: 'USD' | 'NPR';
+  nprConversionRate: number;
   deliveryChargeInside: number;
   deliveryChargeOutside: number;
   freeDeliveryThreshold: number;
@@ -45,6 +51,7 @@ export interface SiteConfig {
   globalDiscountPercent: number;
   globalDiscountStart?: string | null;
   globalDiscountEnd?: string | null;
+  allowStacking: boolean;
   contactPhone: string;
   contactEmail: string;
   contactAddress: string;
@@ -117,7 +124,15 @@ export const Providers = ({
     const saved = localStorage.getItem('lm_cart');
     if (saved) {
       try {
-        setItems(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          setItems(parsed.map(item => ({
+            ...item,
+            priceInside: Number(item.priceInside) || 0,
+            priceOutside: Number(item.priceOutside) || 0,
+            originalPrice: item.originalPrice ? (Number(item.originalPrice) || null) : null,
+          })));
+        }
       } catch {
         localStorage.removeItem('lm_cart');
       }
@@ -153,12 +168,19 @@ export const Providers = ({
   };
 
   const addToCart = (product: Product, quantity: number) => {
+    const sanitizedProduct = {
+      ...product,
+      priceInside: Number(product.priceInside) || 0,
+      priceOutside: Number(product.priceOutside) || 0,
+      originalPrice: product.originalPrice ? (Number(product.originalPrice) || null) : null,
+    };
+
     setItems(prev => {
-      const existing = prev.find(item => item.id === product.id);
+      const existing = prev.find(item => item.id === sanitizedProduct.id);
       if (existing) {
-        return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + quantity } : item);
+        return prev.map(item => item.id === sanitizedProduct.id ? { ...item, quantity: item.quantity + quantity } : item);
       }
-      return [...prev, { ...product, quantity }];
+      return [...prev, { ...sanitizedProduct, quantity }];
     });
     setIsCartOpen(true);
   };
@@ -174,7 +196,9 @@ export const Providers = ({
 
   const cartTotal = items.reduce((sum, item) => {
     const price = isInsideValley ? item.priceInside : item.priceOutside;
-    return sum + (price * item.quantity);
+    const basePrice = Number(price) || 0;
+    const unitPrice = calculateDiscountedPrice(basePrice, item, config);
+    return sum + (unitPrice * item.quantity);
   }, 0);
 
   const deliveryCharge = cartTotal >= config.freeDeliveryThreshold

@@ -272,7 +272,6 @@ export default function AdminCouponsClient({ coupons: initialCoupons, products, 
                 onConfirm={handleDeleteConfirm}
                 title={deleteType === 'hard' ? "Permanently Delete Coupon" : "Archive Coupon"}
                 message={deleteType === 'hard' ? "Are you sure? This cannot be undone and will permanently remove this record from the database." : "Are you sure? Archiving prevents future use but keeps the record for accounting."}
-                // @ts-ignore
                 isLoading={isLoading}
             />
         </div>

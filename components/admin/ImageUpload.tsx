@@ -85,7 +85,7 @@ export function ImageUpload({ images, onChange, maxImages = 5, folder = 'luxemoo
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
         accept: { 'image/*': ['.jpeg', '.jpg', '.png', '.webp'] },
-        maxSize: 5 * 1024 * 1024,
+        maxSize: 10 * 1024 * 1024,
         disabled: uploading,
     });
 
@@ -177,7 +177,7 @@ export function ImageUpload({ images, onChange, maxImages = 5, folder = 'luxemoo
                                 {isDragActive ? 'Drop images here' : 'Drag & drop images, or click to select'}
                             </span>
                             <span className="text-xs text-stone-400">
-                                JPG, PNG, WebP up to 5MB • {images.length}/{maxImages} uploaded
+                                JPG, PNG, WebP up to 10MB • {images.length}/{maxImages} uploaded
                             </span>
                         </div>
                     )}

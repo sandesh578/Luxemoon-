@@ -6,9 +6,10 @@ import { Providers } from "@/components/Providers";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { ClientOverlays } from "@/components/ClientOverlays";
-import { getHomepageNotice, getSiteConfig } from "@/lib/settings";
+import { getHomepageNotice, getSiteConfig } from "@/lib/settings-server";
 import { validateServerEnv } from "@/lib/env";
 import { DEFAULT_LOCALE } from "@/lib/i18n";
+import { normalizeCurrencyCode } from "@/lib/currency";
 
 validateServerEnv();
 
@@ -33,6 +34,11 @@ export async function generateMetadata(): Promise<Metadata> {
       config.metaDescription ||
       "LuxeMoon Nano Botox 4-in-1 haircare system: Anti-Hair Fall Shampoo, Shining Silk Hair Mask, and Soft & Silky Hair Serum.",
     metadataBase: new URL(metadataBase),
+    icons: {
+      icon: config.faviconUrl || "/favicon.ico",
+      shortcut: config.faviconUrl || "/favicon.ico",
+      apple: config.faviconUrl || "/favicon.ico",
+    },
   };
 }
 
@@ -49,6 +55,7 @@ export default async function RootLayout({
     globalDiscountEnd: rawConfig.globalDiscountEnd?.toISOString() ?? null,
     noticeBarText: noticeBar.noticeBarText,
     noticeBarEnabled: noticeBar.noticeBarEnabled,
+    currencyCode: normalizeCurrencyCode(rawConfig.currencyCode),
   };
 
   return (

@@ -1,4 +1,4 @@
-import { getSiteConfig } from '@/lib/settings';
+import { getSiteConfig } from '@/lib/settings-server';
 import { sanitizeAdminHtml } from '@/lib/sanitize-admin-html';
 
 export const revalidate = 60;

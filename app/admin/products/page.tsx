@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import { Plus, Search, Star, Sparkles } from 'lucide-react';
 import { OptimizedImage } from '@/components/OptimizedImage';
+import { formatCurrency } from '@/lib/currency';
+import { getSiteConfig } from '@/lib/settings-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +13,8 @@ export default async function AdminProducts({ searchParams }: { searchParams: Pr
   const page = parseInt(params.page || '1');
   const category = params.category || '';
   const pageSize = 20;
+  const config = await getSiteConfig();
+  const currencyCode = config.currencyCode === 'NPR' ? 'NPR' : 'USD';
 
   const where: any = {};
   if (search) {
@@ -40,7 +44,10 @@ export default async function AdminProducts({ searchParams }: { searchParams: Pr
       orderBy: { createdAt: 'desc' },
       skip: (page - 1) * pageSize,
       take: pageSize,
-    }),
+    }).then(products => products.map(p => ({
+      ...p,
+      priceInside: Number(p.priceInside)
+    }))),
     prisma.product.count({ where }),
   ]);
 
@@ -109,7 +116,7 @@ export default async function AdminProducts({ searchParams }: { searchParams: Pr
             <div className="p-3">
               <h3 className="font-bold text-stone-900 text-sm truncate">{product.name}</h3>
               <div className="flex items-center justify-between mt-1">
-                <span className="text-sm font-bold text-amber-700">NPR {product.priceInside.toLocaleString()}</span>
+                <span className="text-sm font-bold text-amber-700">{formatCurrency(product.priceInside, currencyCode)}</span>
                 <span className="text-xs text-stone-400">{product.stock} in stock</span>
               </div>
               {product.category?.name && (

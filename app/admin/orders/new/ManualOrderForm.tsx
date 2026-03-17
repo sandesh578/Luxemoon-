@@ -6,6 +6,8 @@ import { createAdminOrder } from '@/app/admin/actions';
 import { Plus, Minus, Trash2, Loader2, Navigation2, Truck } from 'lucide-react';
 import { toast } from 'sonner';
 import Image from 'next/image';
+import { useConfig } from '@/components/Providers';
+import { formatCurrency } from '@/lib/currency';
 
 interface ProductMin {
     id: string;
@@ -18,6 +20,8 @@ interface ProductMin {
 
 export default function ManualOrderForm({ products }: { products: ProductMin[] }) {
     const router = useRouter();
+    const config = useConfig();
+    const formatPrice = (amount: number) => formatCurrency(amount, config.currencyCode);
     const [loading, setLoading] = useState(false);
 
     const [form, setForm] = useState({
@@ -182,7 +186,7 @@ export default function ManualOrderForm({ products }: { products: ProductMin[] }
                             <option value="" disabled>+ Add Product</option>
                             {products.map(p => (
                                 <option key={p.id} value={p.id}>
-                                    {p.name} - NPR {isInsideValley ? p.priceInside : p.priceOutside} ({p.stock} in stock)
+                                    {p.name} - {formatPrice(isInsideValley ? p.priceInside : p.priceOutside)} ({p.stock} in stock)
                                 </option>
                             ))}
                         </select>
@@ -204,7 +208,7 @@ export default function ManualOrderForm({ products }: { products: ProductMin[] }
                                     )}
                                     <div className="flex-1 min-w-0">
                                         <div className="font-bold text-sm text-stone-900 truncate">{product.name}</div>
-                                        <div className="text-xs text-stone-500">NPR {price}</div>
+                                        <div className="text-xs text-stone-500">{formatPrice(price)}</div>
                                     </div>
                                     <div className="flex items-center gap-2 bg-white rounded-lg border border-stone-200 p-1">
                                         <button type="button" onClick={() => updateQuantity(item.productId, -1)} className="p-1 hover:bg-stone-50 rounded">
@@ -235,7 +239,7 @@ export default function ManualOrderForm({ products }: { products: ProductMin[] }
                     <div className="space-y-2 text-sm text-stone-400">
                         <div className="flex justify-between">
                             <span>Subtotal</span>
-                            <span className="text-white">NPR {calculateSubtotal().toLocaleString()}</span>
+                            <span className="text-white">{formatPrice(calculateSubtotal())}</span>
                         </div>
                         <div className="flex justify-between">
                             <span>Delivery (Auto-calculated)</span>

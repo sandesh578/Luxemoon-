@@ -5,8 +5,10 @@ import { z } from 'zod';
 import { sendOrderNotificationEmail } from '@/lib/notifications';
 import { logger } from '@/lib/logger';
 import { headers } from 'next/headers';
-import { getSiteConfig, calculateDiscountedPrice } from '@/lib/settings';
+import { calculateDiscountedPrice } from '@/lib/settings';
+import { getSiteConfig } from '@/lib/settings-server';
 import { NEPAL_PROVINCES, isValidProvinceDistrict } from '@/lib/nepal-data';
+import { decimalToNumber, decimalToNumberOrNull } from '@/lib/decimal';
 
 export const runtime = 'nodejs';
 
@@ -115,7 +117,9 @@ export async function POST(req: Request) {
         });
         if (!product) throw new Error(`Product not found: ${item.productId}`);
 
-        const basePrice = data.isInsideValley ? product.priceInside : product.priceOutside;
+        const priceInsideValue = decimalToNumber(product.priceInside);
+        const priceOutsideValue = decimalToNumber(product.priceOutside);
+        const basePrice = data.isInsideValley ? priceInsideValue : priceOutsideValue;
 
         // Apply product-level + global discount
         const unitPrice = calculateDiscountedPrice(basePrice, product, config);
@@ -127,7 +131,11 @@ export async function POST(req: Request) {
           quantity: item.quantity,
           price: unitPrice
         });
-        productSnapshots.set(item.productId, product);
+        productSnapshots.set(item.productId, {
+          ...product,
+          priceInside: decimalToNumber(product.priceInside),
+          priceOutside: decimalToNumber(product.priceOutside),
+        });
       }
 
       // Process Coupon if provided
@@ -158,8 +166,9 @@ export async function POST(req: Request) {
         if (appliedCoupon.discountType === 'FIXED') {
           couponDiscountAmount = appliedCoupon.discountValue;
         } else if (appliedCoupon.discountType === 'PERCENTAGE') {
-          couponDiscountAmount = Math.floor(subtotal * (appliedCoupon.discountValue / 100));
+          couponDiscountAmount = subtotal * (appliedCoupon.discountValue / 100);
         }
+        couponDiscountAmount = Math.round(couponDiscountAmount * 100) / 100;
 
         if (appliedCoupon.maxDiscountCap && couponDiscountAmount > appliedCoupon.maxDiscountCap) {
           couponDiscountAmount = appliedCoupon.maxDiscountCap;
@@ -242,9 +251,19 @@ export async function POST(req: Request) {
       });
     });
 
-    sendOrderNotificationEmail(order).catch((err: unknown) => logger.error('Async email error', err));
+    const serializedOrder = {
+      ...order,
+      total: decimalToNumber(order.total),
+      couponDiscount: decimalToNumberOrNull(order.couponDiscount),
+      items: order.items.map((item) => ({
+        ...item,
+        price: decimalToNumber(item.price),
+      })),
+    };
 
-    return NextResponse.json(order);
+    sendOrderNotificationEmail(serializedOrder).catch((err: unknown) => logger.error('Async email error', err));
+
+    return NextResponse.json(serializedOrder);
   } catch (error) {
     logger.error('Order creation failed', error);
     if (error instanceof z.ZodError) {

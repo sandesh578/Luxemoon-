@@ -3,13 +3,19 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Star, ChevronRight } from 'lucide-react';
+import { formatCurrency } from '@/lib/currency';
+import { calculateDiscountedPrice } from '@/lib/settings';
+import { getSiteConfig } from '@/lib/settings-server';
 
 export const revalidate = 60;
 
 export default async function CategoryPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params;
+    const config = await getSiteConfig();
+    const currencyCode = config.currencyCode === 'NPR' ? 'NPR' : 'USD';
+    const formatPrice = (amount: number) => formatCurrency(amount, currencyCode);
 
-    const category = await prisma.category.findUnique({
+    const categoryData = await prisma.category.findUnique({
         where: { slug },
         select: {
             id: true,
@@ -27,13 +33,23 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
                     originalPrice: true,
                     isFeatured: true,
                     stock: true,
+                    discountPercent: true, discountFixed: true, discountStart: true, discountEnd: true
                 },
                 orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }],
             },
         },
     });
 
-    if (!category) notFound();
+    if (!categoryData) notFound();
+
+    const category = {
+        ...categoryData,
+        products: categoryData.products.map(p => ({
+            ...p,
+            priceInside: calculateDiscountedPrice(Number(p.priceInside), p as any, config as any),
+            originalPrice: p.originalPrice ? Number(p.originalPrice) : null,
+        }))
+    };
 
     return (
         <div className="min-h-screen bg-[#FDFCFB]">
@@ -113,9 +129,9 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
                                     {product.name}
                                 </h3>
                                 <div className="flex items-center gap-3">
-                                    <span className="font-bold text-stone-900">NPR {product.priceInside.toLocaleString()}</span>
+                                    <span className="font-bold text-stone-900">{formatPrice(product.priceInside)}</span>
                                     {product.originalPrice && product.originalPrice > product.priceInside && (
-                                        <span className="text-xs text-stone-400 line-through">NPR {product.originalPrice.toLocaleString()}</span>
+                                        <span className="text-xs text-stone-400 line-through">{formatPrice(product.originalPrice)}</span>
                                     )}
                                 </div>
                             </div>

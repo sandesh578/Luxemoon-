@@ -6,7 +6,7 @@ export const LOCALE_COOKIE_NAME = "lm_locale";
 export const dictionaries = {
   en: {
     common: {
-      currency: "NPR",
+      currency: "$",
       items: "items",
       item: "item",
       language: "Language",
@@ -17,7 +17,7 @@ export const dictionaries = {
       shop: "Shop",
       ourStory: "About Us",
       contact: "Contact",
-      bag: "Your Bag",
+      bag: "Your Cart",
     },
     footer: {
       shop: "Shop",
@@ -36,11 +36,11 @@ export const dictionaries = {
         "Premium Korean-origin haircare. Formulated with Biotin & Keratin to restore your hair's natural brilliance.",
     },
     cart: {
-      yourBag: "Your Bag",
+      yourBag: "Your Cart",
       addForFreeDelivery: "Add {amount} for free delivery",
       unlockedFreeDelivery: "You unlocked free delivery!",
       savingOnDelivery: "You are saving {amount} on delivery fees!",
-      emptyBag: "Your bag is empty.",
+      emptyBag: "Your cart is empty.",
       startShopping: "Start Shopping",
       onlyLeft: "Only {count} left in stock",
       remove: "Remove",

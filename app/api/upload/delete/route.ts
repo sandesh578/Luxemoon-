@@ -17,6 +17,9 @@ export async function POST(req: Request) {
         }
 
         const cloudinary = getCloudinary();
+        if (!cloudinary) {
+            return NextResponse.json({ error: 'Cloudinary is not configured.' }, { status: 500 });
+        }
         const result = await cloudinary.uploader.destroy(publicId, { invalidate: true });
 
         if (result.result === 'ok' || result.result === 'not_found') {
@@ -29,9 +32,6 @@ export async function POST(req: Request) {
     } catch (error) {
         if (error instanceof Error && error.message === 'Unauthorized') {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
-        if (error instanceof Error && error.message.includes('Missing Cloudinary environment variables')) {
-            return NextResponse.json({ error: error.message }, { status: 500 });
         }
         logger.error('Delete request failed', error);
         return NextResponse.json({ error: 'Delete failed' }, { status: 500 });

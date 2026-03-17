@@ -9,7 +9,7 @@ export default async function AdminDashboard() {
   const [orders, statusCounts, revenueStats] = await Promise.all([
     prisma.order.findMany({
       orderBy: { createdAt: 'desc' },
-      take: 200,
+      take: 100,
       select: {
         id: true,
         customerName: true,
@@ -40,7 +40,14 @@ export default async function AdminDashboard() {
           },
         },
       },
-    }),
+    }).then(orders => orders.map(o => ({
+      ...o,
+      total: Number(o.total),
+      items: o.items.map(item => ({
+        ...item,
+        price: Number(item.price)
+      }))
+    }))),
     prisma.order.groupBy({
       by: ['status'],
       _count: { id: true },

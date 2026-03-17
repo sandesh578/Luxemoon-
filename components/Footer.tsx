@@ -6,6 +6,7 @@ import { useI18n } from './Providers';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { optimizeImage } from '@/lib/image';
+import { sanitizeAdminHtml } from '@/lib/sanitize-admin-html';
 
 export const Footer = () => {
   const config = useConfig();
@@ -25,9 +26,10 @@ export const Footer = () => {
           ) : (
             <h3 className="font-serif text-2xl text-white">{config.storeName}</h3>
           )}
-          <p className="text-sm font-light leading-relaxed text-stone-400 max-w-xs">
-            {config.footerContent || t('footer.defaultCopy')}
-          </p>
+          <div
+            className="prose prose-sm prose-invert max-w-xs text-stone-400 prose-p:my-0 prose-a:text-amber-400"
+            dangerouslySetInnerHTML={{ __html: sanitizeAdminHtml(config.footerContent || `<p>${t('footer.defaultCopy')}</p>`) }}
+          />
           <div className="flex gap-4 pt-2">
             {config.instagramUrl ? (
               <a href={config.instagramUrl} target="_blank" rel="noopener noreferrer"><Instagram className="w-5 h-5 hover:text-amber-500 cursor-pointer" /></a>

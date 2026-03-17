@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { z } from "zod";
 import { verifyAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getCloudinary } from "@/lib/cloudinary";
+import { getCloudinary, getCloudinaryConfig } from "@/lib/cloudinary";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -82,19 +82,19 @@ export async function POST(req: Request) {
     const folder = `luxemoon/${data.context}`;
     const resourceType = data.assetType;
     const allowedFormats = data.assetType === "image" ? "jpg,jpeg,png,webp" : "mp4";
-    const maxFileSize = data.assetType === "image" ? 5 * 1024 * 1024 : 50 * 1024 * 1024;
+    const maxFileSize = data.assetType === "image" ? 10 * 1024 * 1024 : 50 * 1024 * 1024;
 
     const cloudinary = getCloudinary();
-    const apiKey = process.env.CLOUDINARY_API_KEY;
-    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-    const apiSecret = process.env.CLOUDINARY_API_SECRET;
+    const config = getCloudinaryConfig();
 
-    if (!apiKey || !cloudName || !apiSecret) {
+    if (!cloudinary || !config) {
       return NextResponse.json(
         { error: "Cloudinary is not configured." },
         { status: 500 }
       );
     }
+
+    const { apiKey, cloudName, apiSecret } = config;
 
     const timestamp = Math.round(Date.now() / 1000);
     const signatureParams = {
@@ -137,12 +137,6 @@ export async function POST(req: Request) {
         { error: "Upload limit exceeded. Please try again later." },
         { status: 429 }
       );
-    }
-    if (
-      error instanceof Error &&
-      error.message.includes("Missing Cloudinary environment variables")
-    ) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
     }
     return NextResponse.json(
       { error: "Failed to generate upload signature" },

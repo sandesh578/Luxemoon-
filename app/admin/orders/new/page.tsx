@@ -4,7 +4,7 @@ import ManualOrderForm from './ManualOrderForm';
 export const dynamic = 'force-dynamic';
 
 export default async function NewManualOrderPage() {
-    const products = await prisma.product.findMany({
+    const products = (await prisma.product.findMany({
         where: { isActive: true },
         select: {
             id: true,
@@ -15,7 +15,11 @@ export default async function NewManualOrderPage() {
             images: true,
         },
         orderBy: { name: 'asc' }
-    });
+    })).map(p => ({
+        ...p,
+        priceInside: Number(p.priceInside),
+        priceOutside: Number(p.priceOutside),
+    }));
 
     return (
         <div className="max-w-5xl mx-auto px-4 py-8">

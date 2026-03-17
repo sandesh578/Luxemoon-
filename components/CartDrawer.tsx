@@ -4,12 +4,14 @@ import { X, ShoppingBag, Minus, Plus } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { optimizeImage } from '@/lib/image';
+import { formatCurrency } from '@/lib/currency';
 
 export const CartDrawer = () => {
   const { items, removeFromCart, updateQuantity, cartTotal, isCartOpen, setIsCartOpen } = useCart();
   const { isInsideValley } = useLocationContext();
   const config = useConfig();
   const { t } = useI18n();
+  const formatPrice = (amount: number) => formatCurrency(amount, config.currencyCode);
 
   const remainingForFreeDelivery = Math.max(0, config.freeDeliveryThreshold - cartTotal);
   const progressPercent = Math.min(100, (cartTotal / config.freeDeliveryThreshold) * 100);
@@ -32,7 +34,7 @@ export const CartDrawer = () => {
             <div className="flex justify-between text-[11px] font-bold text-amber-900 mb-2 uppercase tracking-wide">
               <span>
                 {remainingForFreeDelivery > 0
-                  ? t('cart.addForFreeDelivery', { amount: `${t('common.currency')} ${remainingForFreeDelivery.toLocaleString()}` })
+                  ? t('cart.addForFreeDelivery', { amount: formatPrice(remainingForFreeDelivery) })
                   : t('cart.unlockedFreeDelivery')}
               </span>
               <span>{Math.round(progressPercent)}%</span>
@@ -46,7 +48,7 @@ export const CartDrawer = () => {
             {remainingForFreeDelivery === 0 && (
               <p className="text-[10px] text-amber-700 mt-2 font-medium">
                 {t('cart.savingOnDelivery', {
-                  amount: `${t('common.currency')} ${(isInsideValley ? config.deliveryChargeInside : config.deliveryChargeOutside).toLocaleString()}`,
+                  amount: formatPrice(isInsideValley ? config.deliveryChargeInside : config.deliveryChargeOutside),
                 })}
               </p>
             )}
@@ -96,7 +98,7 @@ export const CartDrawer = () => {
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-stone-900">
-                        {t('common.currency')} {((isInsideValley ? item.priceInside : item.priceOutside) * item.quantity).toLocaleString()}
+                        {formatPrice((isInsideValley ? item.priceInside : item.priceOutside) * item.quantity)}
                       </p>
                       <button
                         onClick={() => removeFromCart(item.id)}
@@ -116,7 +118,7 @@ export const CartDrawer = () => {
           <div className="p-6 bg-stone-50 border-t border-stone-100 space-y-4">
             <div className="flex justify-between text-lg font-bold text-stone-900">
               <span>{t('cart.subtotal')}</span>
-              <span>{t('common.currency')} {cartTotal.toLocaleString()}</span>
+              <span>{formatPrice(cartTotal)}</span>
             </div>
             <p className="text-xs text-stone-500 text-center">{t('cart.shippingAtCheckout')}</p>
             <Link

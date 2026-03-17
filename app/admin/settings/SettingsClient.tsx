@@ -60,9 +60,41 @@ export default function SettingsClient({ initialData }: { initialData: Record<st
           <div className="space-y-6">
             <Field label="Store Name" value={String(formData.storeName || '')} onChange={v => set('storeName', v)} />
             <Field label="Banner Text" value={String(formData.bannerText || '')} onChange={v => set('bannerText', v)} />
-            <div>
-              <label className="block text-sm font-bold text-stone-600 mb-2">Site Logo</label>
-              <ImageUpload images={formData.logoUrl ? [String(formData.logoUrl)] : []} onChange={urls => set('logoUrl', urls[0] || null)} maxImages={1} folder="luxemoon/brand" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-bold text-stone-600 mb-2">Site Logo</label>
+                <ImageUpload images={formData.logoUrl ? [String(formData.logoUrl)] : []} onChange={urls => set('logoUrl', urls[0] || null)} maxImages={1} folder="luxemoon/brand" />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-stone-600 mb-2">Browser Tab Logo</label>
+                <ImageUpload images={formData.faviconUrl ? [String(formData.faviconUrl)] : []} onChange={urls => set('faviconUrl', urls[0] || null)} maxImages={1} folder="luxemoon/brand" />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <ToggleField label="Show Language Toggle" checked={Boolean(formData.languageToggleEnabled)} onChange={v => set('languageToggleEnabled', v)} description="Only show the Nepali / English switcher on the storefront when enabled." />
+              <ToggleField label="Show Stock On Product Page" checked={Boolean(formData.showStockOnProduct)} onChange={v => set('showStockOnProduct', v)} description="Display the stock badge on product detail pages only when enabled." />
+            </div>
+            <div className="border-t border-stone-200 pt-5 space-y-4">
+              <h3 className="text-sm font-bold text-stone-700">Currency Settings</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <SelectField
+                  label="Store Currency"
+                  value={String(formData.currencyCode || 'USD')}
+                  onChange={v => set('currencyCode', v)}
+                  options={[
+                    { label: 'USD ($)', value: 'USD' },
+                    { label: 'NPR', value: 'NPR' },
+                  ]}
+                />
+                <DecimalField
+                  label="NPR per 1 USD"
+                  value={Number(formData.nprConversionRate ?? 133.5)}
+                  onChange={v => set('nprConversionRate', v)}
+                />
+              </div>
+              <p className="text-xs text-stone-500">
+                Changing the store currency will convert existing product and delivery pricing automatically using this rate.
+              </p>
             </div>
           </div>
         )}
@@ -129,7 +161,7 @@ export default function SettingsClient({ initialData }: { initialData: Record<st
           <div className="space-y-6">
             <div>
               <label className="block text-sm font-bold text-stone-600 mb-1">Footer Content</label>
-              <textarea className="w-full p-2 border rounded-lg" rows={3} value={String(formData.footerContent || '')} onChange={e => set('footerContent', e.target.value)} placeholder="Short description shown in footer..." />
+              <RichTextEditor content={String(formData.footerContent || '')} onChange={v => set('footerContent', v)} placeholder="Short description shown in footer..." />
             </div>
             <div>
               <label className="block text-sm font-bold text-stone-600 mb-1">About Page Content</label>
@@ -184,6 +216,40 @@ function NumberField({ label, value, onChange }: { label: string; value: number;
     <div>
       <label className="block text-sm font-bold text-stone-600 mb-1">{label}</label>
       <input type="number" className="w-full p-2 border rounded-lg" value={value} onChange={e => onChange(parseInt(e.target.value, 10) || 0)} />
+    </div>
+  );
+}
+
+function DecimalField({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
+  return (
+    <div>
+      <label className="block text-sm font-bold text-stone-600 mb-1">{label}</label>
+      <input type="number" step="0.01" className="w-full p-2 border rounded-lg" value={value} onChange={e => onChange(parseFloat(e.target.value) || 0)} />
+    </div>
+  );
+}
+
+function SelectField({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: { label: string; value: string }[];
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-bold text-stone-600 mb-1">{label}</label>
+      <select className="w-full p-2 border rounded-lg bg-white" value={value} onChange={e => onChange(e.target.value)}>
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }

@@ -4,6 +4,9 @@ import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import { AlertCircle, Clock, CreditCard, Loader2, Truck } from 'lucide-react';
 import { optimizeImage } from '@/lib/image';
+import { useConfig } from '@/components/Providers';
+import { formatCurrency } from '@/lib/currency';
+import { calculateDiscountedPrice } from '@/lib/settings';
 
 type CheckoutItem = {
   id: string;
@@ -13,6 +16,10 @@ type CheckoutItem = {
   priceInside: number;
   priceOutside: number;
   originalPrice?: number | null;
+  discountPercent?: number | null;
+  discountFixed?: number | null;
+  discountStart?: string | null;
+  discountEnd?: string | null;
 };
 
 type AppliedCoupon = {
@@ -75,23 +82,35 @@ export default function CheckoutSummary({
   showValidationSummary,
   onCouponCodeChange,
 }: Props) {
+  const config = useConfig();
   const [couponCode, setCouponCode] = useState('');
   const [couponError, setCouponError] = useState('');
   const [couponSuccess, setCouponSuccess] = useState('');
   const [validatingCoupon, setValidatingCoupon] = useState(false);
   const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
 
-  const totalDiscount = useMemo(() => items.reduce((accumulator, item) => {
-    const currentPrice = isInsideValley ? item.priceInside : item.priceOutside;
-    const originalPrice = item.originalPrice || currentPrice;
-    if (originalPrice > currentPrice) return accumulator + (originalPrice - currentPrice) * item.quantity;
-    return accumulator;
-  }, 0), [isInsideValley, items]);
-
   const subtotal = useMemo(() => {
-    const cartSubtotal = items.reduce((accumulator, item) => accumulator + (isInsideValley ? item.priceInside : item.priceOutside) * item.quantity, 0);
-    return cartSubtotal + totalDiscount;
-  }, [isInsideValley, items, totalDiscount]);
+    return items.reduce((accumulator, item) => {
+        const basePrice = isInsideValley ? (Number(item.priceInside) || 0) : (Number(item.priceOutside) || 0);
+        const unitPrice = calculateDiscountedPrice(basePrice, item as any, config as any);
+        return accumulator + (unitPrice * item.quantity);
+    }, 0);
+  }, [isInsideValley, items, config]);
+
+  const totalDiscount = useMemo(() => {
+    return items.reduce((accumulator, item) => {
+      const basePrice = isInsideValley ? (Number(item.priceInside) || 0) : (Number(item.priceOutside) || 0);
+      const unitPrice = calculateDiscountedPrice(basePrice, item as any, config as any);
+      const originalPrice = Number(item.originalPrice) || basePrice;
+      
+      // The discount is the difference between what they WOULD have paid (original) 
+      // vs what they are actually paying (unitPrice)
+      if (originalPrice > unitPrice) {
+        return accumulator + (originalPrice - unitPrice) * item.quantity;
+      }
+      return accumulator;
+    }, 0);
+  }, [isInsideValley, items, config]);
 
   const couponDiscountAmount = useMemo(() => {
     if (!appliedCoupon) return 0;
@@ -109,6 +128,7 @@ export default function CheckoutSummary({
   }, [couponDiscountAmount, deliveryChargeInside, deliveryChargeOutside, freeDeliveryThreshold, isInsideValley, subtotal]);
 
   const finalTotal = subtotal - couponDiscountAmount + deliveryCharge + codFee;
+  const formatPrice = (amount: number) => formatCurrency(amount, config.currencyCode);
 
   useEffect(() => {
     onCouponCodeChange(appliedCoupon?.code);
@@ -165,7 +185,7 @@ export default function CheckoutSummary({
               <p className="text-xs text-stone-500">{copy.qty}: {item.quantity}</p>
             </div>
             <span className="font-bold text-stone-800 whitespace-nowrap">
-              NPR {((isInsideValley ? item.priceInside : item.priceOutside) * item.quantity).toLocaleString()}
+              {formatPrice(((isInsideValley ? (Number(item.priceInside) || 0) : (Number(item.priceOutside) || 0))) * item.quantity)}
             </span>
           </div>
         ))}
@@ -201,30 +221,30 @@ export default function CheckoutSummary({
       <div className="border-t border-stone-200 pt-4 space-y-2 text-sm">
         <div className="flex justify-between">
           <span className="text-stone-500">{copy.itemsTotal}</span>
-          <span className="font-bold">NPR {subtotal.toLocaleString()}</span>
+          <span className="font-bold">{formatPrice(subtotal)}</span>
         </div>
         {totalDiscount > 0 && (
           <div className="flex justify-between text-green-700 bg-green-50 border border-green-100 rounded-lg px-2 py-1">
             <span className="flex items-center gap-1">{copy.savings}</span>
-            <span className="font-bold">- NPR {totalDiscount.toLocaleString()}</span>
+            <span className="font-bold">- {formatPrice(totalDiscount)}</span>
           </div>
         )}
         {couponDiscountAmount > 0 && (
           <div className="flex justify-between text-green-700 bg-green-50 border border-green-100 rounded-lg px-2 py-1">
             <span className="flex items-center gap-1">{copy.coupon} ({appliedCoupon?.code})</span>
-            <span className="font-bold">- NPR {couponDiscountAmount.toLocaleString()}</span>
+            <span className="font-bold">- {formatPrice(couponDiscountAmount)}</span>
           </div>
         )}
         <div className="flex justify-between pt-1">
           <span className="text-stone-500 flex items-center gap-1"><Truck className="w-3.5 h-3.5" /> {copy.deliveryCharge}</span>
           <span className="font-bold">
-            {deliveryCharge === 0 ? <span className="text-green-600">{copy.free}</span> : `NPR ${deliveryCharge.toLocaleString()}`}
+            {deliveryCharge === 0 ? <span className="text-green-600">{copy.free}</span> : formatPrice(deliveryCharge)}
           </span>
         </div>
         {codFee > 0 && (
           <div className="flex justify-between">
             <span className="text-stone-500 flex items-center gap-1"><CreditCard className="w-3.5 h-3.5" /> {copy.codFee}</span>
-            <span className="font-bold">NPR {codFee}</span>
+            <span className="font-bold">{formatPrice(codFee)}</span>
           </div>
         )}
         {formDistrict && (
@@ -235,7 +255,7 @@ export default function CheckoutSummary({
         )}
         <div className="flex justify-between text-lg pt-2 border-t border-stone-200">
           <span className="font-bold text-stone-900">{copy.finalTotal}</span>
-          <span className="font-extrabold text-stone-900 text-xl">NPR {finalTotal.toLocaleString()}</span>
+          <span className="font-extrabold text-stone-900 text-xl">{formatPrice(finalTotal)}</span>
         </div>
       </div>
 

@@ -107,12 +107,12 @@ export default function ProductReviewsSection({ productId, reviews }: Props) {
       for (let index = 0; index < files.length; index++) {
         const rawFile = files[index];
         const file = type === 'image' ? await compressImageFile(rawFile) : rawFile;
-        const maxSize = type === 'video' ? 50 * 1024 * 1024 : 5 * 1024 * 1024;
+        const maxSize = type === 'video' ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
 
         if (file.size > maxSize) {
           const message = type === 'video'
             ? 'Upload failed. Please try a shorter video (Max 50MB).'
-            : 'Upload failed. Please try a smaller image (Max 5MB).';
+            : 'Upload failed. Please try a smaller image (Max 10MB).';
           setReviewError(message);
           toast.error(message);
           continue;

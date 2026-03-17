@@ -7,11 +7,15 @@ import { unstable_cache } from 'next/cache';
 import { SortDropdown } from './SortDropdown';
 import { translate } from '@/lib/i18n';
 import { getLocaleServer } from '@/lib/i18n-server';
+import { formatCurrency } from '@/lib/currency';
+import { calculateDiscountedPrice } from '@/lib/settings';
+import { getSiteConfig } from '@/lib/settings-server';
 
 export const revalidate = 60;
 
 const getCachedShopData = unstable_cache(
   async (sortParam: string, filterParam: string) => {
+    const config = await getSiteConfig();
     let orderBy: any = [{ isFeatured: 'desc' }, { createdAt: 'desc' }];
     let where: any = { isActive: true, isArchived: false, isDraft: false };
 
@@ -28,13 +32,18 @@ const getCachedShopData = unstable_cache(
       orderBy = { orderItems: { _count: 'desc' } };
     }
 
-    const products = await prisma.product.findMany({
+    const products = (await prisma.product.findMany({
       where,
       select: {
         id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, isFeatured: true, isNew: true, stock: true,
+        discountPercent: true, discountFixed: true, discountStart: true, discountEnd: true
       },
       orderBy,
-    });
+    })).map(p => ({
+        ...p,
+        priceInside: calculateDiscountedPrice(Number(p.priceInside), p as any, config as any),
+        originalPrice: p.originalPrice ? Number(p.originalPrice) : null,
+    }));
     const categories = await prisma.category.findMany({
       select: { id: true, slug: true, name: true },
       orderBy: { name: 'asc' },
@@ -74,7 +83,12 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
     pageSubtitle = t('shopPage.bestSubtitle');
   }
 
-  const [products, categories] = await getCachedShopData(sortParam, filterParam);
+  const [[products, categories], config] = await Promise.all([
+    getCachedShopData(sortParam, filterParam),
+    getSiteConfig(),
+  ]);
+  const currencyCode = config.currencyCode === 'NPR' ? 'NPR' : 'USD';
+  const formatPrice = (amount: number) => formatCurrency(amount, currencyCode);
 
   return (
     <div className="min-h-screen bg-[#FDFCFB]">
@@ -156,9 +170,9 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
                   {product.name}
                 </h3>
                 <div className="flex items-center gap-3">
-                  <span className="font-bold text-stone-900">{t('common.currency')} {product.priceInside.toLocaleString()}</span>
+                  <span className="font-bold text-stone-900">{formatPrice(product.priceInside)}</span>
                   {product.originalPrice && product.originalPrice > product.priceInside && (
-                    <span className="text-xs text-stone-400 line-through">{t('common.currency')} {product.originalPrice.toLocaleString()}</span>
+                    <span className="text-xs text-stone-400 line-through">{formatPrice(product.originalPrice)}</span>
                   )}
                 </div>
               </div>

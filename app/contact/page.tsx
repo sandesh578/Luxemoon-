@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { getSiteConfig } from '@/lib/settings';
+import { getSiteConfig } from '@/lib/settings-server';
 import ContactClient from './ContactClient';
 import { getLocaleServer } from '@/lib/i18n-server';
 

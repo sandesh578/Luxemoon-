@@ -52,9 +52,9 @@ model Product {
   slug          String   @unique
   name          String
   description   String
-  priceInside   Int
-  priceOutside  Int
-  originalPrice Int?
+  priceInside   Decimal @db.Decimal(12,2)
+  priceOutside  Decimal @db.Decimal(12,2)
+  originalPrice Decimal? @db.Decimal(12,2)
   images        String[]
   features      String[]
   videoUrl      String?
@@ -110,6 +110,7 @@ model Product {
   @@index([isArchived])
   @@index([isActive, isArchived, isDraft, createdAt])
   @@index([categoryId, isActive, isArchived, isDraft, stock])
+  @@index([name])
 }
 
 model Order {
@@ -123,7 +124,7 @@ model Order {
   landmark        String?
   notes           String?
   isInsideValley  Boolean
-  total           Int
+  total           Decimal @db.Decimal(14,2)
   status          OrderStatus @default(PENDING)
   rejectionReason String?
   ipAddress       String?
@@ -140,7 +141,7 @@ model Order {
   // Coupons
   couponId       String?
   couponCode     String?
-  couponDiscount Int?
+  couponDiscount Decimal? @db.Decimal(14,2)
   coupon         Coupon? @relation(fields: [couponId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
@@ -154,12 +155,13 @@ model Order {
   @@index([createdAt])
   @@index([couponId])
   @@index([status, createdAt])
+  @@index([customerName])
 }
 
 model OrderItem {
   id        String @id @default(cuid())
   quantity  Int
-  price     Int
+  price     Decimal @db.Decimal(14,2)
   orderId   String
   productId String
 
@@ -315,6 +317,12 @@ model SiteConfig {
   // Notifications
   emailNotificationsEnabled Boolean @default(false)
   smsNotificationsEnabled   Boolean @default(false)
+
+  // Feature Toggles
+  languageToggleEnabled Boolean @default(false)
+  showStockOnProduct    Boolean @default(true)
+  currencyCode          String  @default("USD")
+  nprConversionRate     Float   @default(133.5)
 }
 
 model HomepageContent {

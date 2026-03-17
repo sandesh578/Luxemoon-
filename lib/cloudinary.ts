@@ -1,29 +1,34 @@
 import { v2 as cloudinary } from "cloudinary";
 
+type CloudinaryConfig = {
+  cloudName: string;
+  apiKey: string;
+  apiSecret: string;
+};
+
 let configured = false;
 
-function getRequiredCloudinaryEnv() {
+export function getCloudinaryConfig(): CloudinaryConfig | null {
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
   const apiKey = process.env.CLOUDINARY_API_KEY;
   const apiSecret = process.env.CLOUDINARY_API_SECRET;
 
   if (!cloudName || !apiKey || !apiSecret) {
-    throw new Error(
-      "Missing Cloudinary environment variables: NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET"
-    );
+    return null;
   }
 
   return { cloudName, apiKey, apiSecret };
 }
 
 export function getCloudinary() {
-  const { cloudName, apiKey, apiSecret } = getRequiredCloudinaryEnv();
+  const config = getCloudinaryConfig();
+  if (!config) return null;
 
   if (!configured) {
     cloudinary.config({
-      cloud_name: cloudName,
-      api_key: apiKey,
-      api_secret: apiSecret,
+      cloud_name: config.cloudName,
+      api_key: config.apiKey,
+      api_secret: config.apiSecret,
       secure: true,
     });
     configured = true;
@@ -31,4 +36,3 @@ export function getCloudinary() {
 
   return cloudinary;
 }
-

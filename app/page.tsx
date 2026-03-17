@@ -7,37 +7,46 @@ import { QuickAddButton } from '@/components/QuickAddButton';
 import { translate } from '@/lib/i18n';
 import { getLocaleServer } from '@/lib/i18n-server';
 import { unstable_cache } from 'next/cache';
-
-export const revalidate = 120;
+import { formatCurrency } from '@/lib/currency';
+import { calculateDiscountedPrice } from '@/lib/settings';
+import { getSiteConfig } from '@/lib/settings-server';
 
 const getCachedHomepageData = unstable_cache(
   async () => {
+    const config = await getSiteConfig();
     const content = await prisma.homepageContent.findUnique({ where: { id: 1 } });
-    const featuredProducts = await prisma.product.findMany({
+
+    const sanitizeProducts = (products: any[]) => products.map(p => ({
+        ...p,
+        priceInside: calculateDiscountedPrice(Number(p.priceInside), p as any, config as any),
+        originalPrice: p.originalPrice ? Number(p.originalPrice) : null,
+    }));
+
+    const featuredProductsRaw = await prisma.product.findMany({
       where: { isActive: true, isArchived: false, isDraft: false, isFeatured: true },
       select: {
-        id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, isFeatured: true, discountPercent: true
+        id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, isFeatured: true, discountPercent: true, discountFixed: true, discountStart: true, discountEnd: true
       },
       take: 4,
       orderBy: { createdAt: 'desc' },
     });
-    const newArrivals = await prisma.product.findMany({
+    const newArrivalsRaw = await prisma.product.findMany({
       where: { isActive: true, isArchived: false, isDraft: false, isNew: true },
       select: {
-        id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, isNew: true, discountPercent: true
+        id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, isNew: true, discountPercent: true, discountFixed: true, discountStart: true, discountEnd: true
       },
       take: 4,
       orderBy: { createdAt: 'desc' },
     });
-    const bestSellers = await prisma.product.findMany({
+    const bestSellersRaw = await prisma.product.findMany({
       where: { isActive: true, isArchived: false, isDraft: false },
       select: {
-        id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, discountPercent: true
+        id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, discountPercent: true, discountFixed: true, discountStart: true, discountEnd: true
       },
       take: 4,
       orderBy: { orderItems: { _count: 'desc' } },
     });
-    const nanoplastiaProducts = await prisma.product.findMany({
+    const nanoplastiaProductsRaw = await prisma.product.findMany({
       where: {
         isActive: true,
         isArchived: false,
@@ -47,13 +56,19 @@ const getCachedHomepageData = unstable_cache(
         },
       },
       select: {
-        id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, isNew: true, stock: true, discountPercent: true
+        id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, isNew: true, stock: true, discountPercent: true, discountFixed: true, discountStart: true, discountEnd: true
       },
       take: 3,
       orderBy: { createdAt: 'asc' },
     });
 
-    return [content, featuredProducts, newArrivals, bestSellers, nanoplastiaProducts] as const;
+    return [
+        content,
+        sanitizeProducts(featuredProductsRaw),
+        sanitizeProducts(newArrivalsRaw),
+        sanitizeProducts(bestSellersRaw),
+        sanitizeProducts(nanoplastiaProductsRaw)
+    ] as const;
   },
   ['home-page-data'],
   { tags: ['products', 'homepage-content'], revalidate: 300 }
@@ -62,7 +77,10 @@ const getCachedHomepageData = unstable_cache(
 export default async function Home() {
   const locale = await getLocaleServer();
   const t = (key: string, vars?: Record<string, string | number>) => translate(locale, key, vars);
-  const [content, featuredProducts, newArrivals, bestSellers, nanoplastiaProducts] = await getCachedHomepageData();
+  const [homeData, config] = await Promise.all([getCachedHomepageData(), getSiteConfig()]);
+  const [content, featuredProducts, newArrivals, bestSellers, nanoplastiaProducts] = homeData;
+  const currencyCode = config.currencyCode === 'NPR' ? 'NPR' : 'USD';
+  const formatPrice = (amount: number) => formatCurrency(amount, currencyCode);
 
   const nanoplastiaOrder = ['anti-hair-fall-shampoo', 'shining-silk-hair-mask', 'soft-silky-serum'];
   const orderedNanoplastiaProducts = [...nanoplastiaProducts].sort(
@@ -164,9 +182,9 @@ export default async function Home() {
                     </Link>
                     <h3 className="font-serif text-2xl text-white mb-2 group-hover:text-amber-500 transition-colors">{p.name}</h3>
                     <div className="flex items-center justify-center gap-3 mb-6">
-                      <span className="font-bold text-amber-500 text-lg">{t('common.currency')} {p.priceInside.toLocaleString()}</span>
+                      <span className="font-bold text-amber-500 text-lg">{formatPrice(p.priceInside)}</span>
                       {p.originalPrice && p.originalPrice > p.priceInside && (
-                        <span className="text-stone-500 line-through text-sm">{t('common.currency')} {p.originalPrice.toLocaleString()}</span>
+                        <span className="text-stone-500 line-through text-sm">{formatPrice(p.originalPrice)}</span>
                       )}
                     </div>
                     <div className="w-full max-w-xs transition-all duration-300 opacity-100 translate-y-0 lg:opacity-0 lg:-translate-y-4 pointer-events-auto lg:pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto">
@@ -194,7 +212,7 @@ export default async function Home() {
         viewAllLabel={t('home.viewAll')}
         offerLabel={t('home.offer')}
         newLabel={t('home.newBadge')}
-        currencyLabel={t('common.currency')}
+        currencyCode={currencyCode}
       />
       <ProductGrid
         title={t('home.newTitle')}
@@ -204,7 +222,7 @@ export default async function Home() {
         viewAllLabel={t('home.viewAll')}
         offerLabel={t('home.offer')}
         newLabel={t('home.newBadge')}
-        currencyLabel={t('common.currency')}
+        currencyCode={currencyCode}
       />
       <ProductGrid
         title={t('home.bestTitle')}
@@ -214,7 +232,7 @@ export default async function Home() {
         viewAllLabel={t('home.viewAll')}
         offerLabel={t('home.offer')}
         newLabel={t('home.newBadge')}
-        currencyLabel={t('common.currency')}
+        currencyCode={currencyCode}
       />
 
       {/* Campaign Banners */}
@@ -295,7 +313,7 @@ function ProductGrid({
   viewAllLabel,
   offerLabel,
   newLabel,
-  currencyLabel,
+  currencyCode,
 }: {
   title: string,
   subtitle: string,
@@ -304,9 +322,10 @@ function ProductGrid({
   viewAllLabel: string,
   offerLabel: string,
   newLabel: string,
-  currencyLabel: string,
+  currencyCode: 'USD' | 'NPR',
 }) {
   if (!products || products.length === 0) return null;
+  const formatPrice = (amount: number) => formatCurrency(amount, currencyCode);
   return (
     <section className="py-24 px-4 bg-[#FDFCFB] border-t border-stone-100">
       <div className="max-w-7xl mx-auto space-y-12">
@@ -355,9 +374,9 @@ function ProductGrid({
                   </div>
                   <h3 className="font-serif text-xl text-stone-900 mb-1 group-hover:text-amber-700 transition-colors">{p.name}</h3>
                   <div className="flex items-center gap-3">
-                    <span className="font-bold text-stone-900">{currencyLabel} {p.priceInside.toLocaleString()}</span>
+                    <span className="font-bold text-stone-900">{formatPrice(p.priceInside)}</span>
                     {p.originalPrice && p.originalPrice > p.priceInside && (
-                      <span className="text-stone-400 line-through text-xs">{currencyLabel} {p.originalPrice.toLocaleString()}</span>
+                      <span className="text-stone-400 line-through text-xs">{formatPrice(p.originalPrice)}</span>
                     )}
                   </div>
                 </Link>

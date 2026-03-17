@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyAdmin } from '@/lib/auth';
+import { decimalToNumber, decimalToNumberOrNull } from '@/lib/decimal';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -16,6 +17,8 @@ export async function GET(
     const order = await prisma.order.findUnique({
       where: { id },
       select: {
+        total: true,
+        couponDiscount: true,
         id: true,
         address: true,
         trackingNumber: true,
@@ -49,7 +52,17 @@ export async function GET(
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    return NextResponse.json(order);
+    const serialized = {
+      ...order,
+      total: decimalToNumber(order.total),
+      couponDiscount: decimalToNumberOrNull(order.couponDiscount),
+      items: order.items.map((item) => ({
+        ...item,
+        price: decimalToNumber(item.price),
+      })),
+    };
+
+    return NextResponse.json(serialized);
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

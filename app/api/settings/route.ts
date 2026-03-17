@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getSiteConfig } from '@/lib/settings';
+import { getSiteConfig } from '@/lib/settings-server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

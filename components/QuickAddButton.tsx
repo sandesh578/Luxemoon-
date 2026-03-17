@@ -13,7 +13,7 @@ export function QuickAddButton({ product, className }: { product: any, className
                 e.preventDefault();
                 e.stopPropagation();
                 addToCart(product as any, 1);
-                toast.success('Added to bag!');
+                toast.success('Added to cart!');
             }}
             className={className || "w-full py-3 bg-stone-900 text-white text-sm font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-amber-700 transition-colors shadow-lg shadow-stone-900/10 active:scale-[0.98]"}
         >

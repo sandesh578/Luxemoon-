@@ -1,5 +1,5 @@
 import SettingsClient from './SettingsClient';
-import { getSiteConfigForAdmin } from '@/lib/settings';
+import { getSiteConfigForAdmin } from '@/lib/settings-server';
 
 export const dynamic = 'force-dynamic';
 

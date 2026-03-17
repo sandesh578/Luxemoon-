@@ -6,7 +6,20 @@ import { revalidatePath } from "next/cache";
 import { sendOrderStatusNotification } from "@/lib/notifications";
 import { logger } from "@/lib/logger";
 import { verifyAdmin } from "@/lib/auth";
-import { invalidateSiteConfig, getSiteConfigForAdmin } from "@/lib/settings";
+import { invalidateSiteConfig, getSiteConfigForAdmin } from "@/lib/settings-server";
+import { convertAmount, roundCurrencyAmount, sanitizeConversionRate, normalizeCurrencyCode, type CurrencyCode } from "@/lib/currency";
+import { decimalToNumber, decimalToNumberOrNull } from "@/lib/decimal";
+
+const roundTwoDecimals = (value: number) => Math.round(value * 100) / 100;
+
+function normalizeProductPrices<T extends { priceInside: any; priceOutside: any; originalPrice: any }>(product: T) {
+  return {
+    ...product,
+    priceInside: decimalToNumber(product.priceInside),
+    priceOutside: decimalToNumber(product.priceOutside),
+    originalPrice: decimalToNumberOrNull(product.originalPrice),
+  };
+}
 
 // --- ORDER ACTIONS ---
 
@@ -46,7 +59,7 @@ export async function updateOrderStatus(
         courierName,
         rejectionReason,
         isInsideValley: order.isInsideValley,
-        total: order.total,
+        total: Number(order.total),
       }).catch((e: unknown) => logger.error('Notification Error', e));
     }
 
@@ -100,6 +113,7 @@ export async function updateSiteConfig(data: Record<string, unknown>): Promise<{
   await verifyAdmin();
 
   const updateData: Record<string, unknown> = {};
+  const currentConfig = await getSiteConfigForAdmin();
   const stringFields = [
     'storeName', 'bannerText', 'logoUrl', 'faviconUrl', 'contactPhone', 'contactEmail',
     'contactAddress', 'whatsappNumber', 'facebookUrl', 'instagramUrl', 'tiktokUrl',
@@ -113,8 +127,9 @@ export async function updateSiteConfig(data: Record<string, unknown>): Promise<{
   ];
   const booleanFields = [
     'expressDeliveryEnabled', 'emailNotificationsEnabled', 'smsNotificationsEnabled',
-    'allowStacking', 'festiveSaleEnabled'
+    'allowStacking', 'festiveSaleEnabled', 'languageToggleEnabled', 'showStockOnProduct'
   ];
+  const floatFields = ['nprConversionRate'];
   const dateFields = ['globalDiscountStart', 'globalDiscountEnd'];
 
   for (const field of stringFields) {
@@ -126,19 +141,73 @@ export async function updateSiteConfig(data: Record<string, unknown>): Promise<{
   for (const field of booleanFields) {
     if (field in data) updateData[field] = Boolean(data[field]);
   }
+  for (const field of floatFields) {
+    if (field in data) updateData[field] = typeof data[field] === 'number' ? data[field] : parseFloat(String(data[field])) || 0;
+  }
   for (const field of dateFields) {
     if (field in data) updateData[field] = data[field] ? new Date(String(data[field])) : null;
   }
+  if ('currencyCode' in data) {
+    updateData.currencyCode = String(data.currencyCode || currentConfig.currencyCode) === 'NPR' ? 'NPR' : 'USD';
+  }
 
-  await prisma.siteConfig.upsert({
-    where: { id: 1 },
-    update: updateData,
-    create: {
-      ...(await getSiteConfigForAdmin()),
-      ...updateData,
-      id: 1,
-    },
-  });
+  const nextCurrencyCode = (updateData.currencyCode as CurrencyCode | undefined) ?? normalizeCurrencyCode(currentConfig.currencyCode);
+  const nextRate = sanitizeConversionRate((updateData.nprConversionRate as number | undefined) ?? currentConfig.nprConversionRate);
+  updateData.nprConversionRate = nextRate;
+
+  if (currentConfig.currencyCode !== nextCurrencyCode) {
+    const monetaryFields: Array<keyof typeof currentConfig> = [
+      'deliveryChargeInside',
+      'deliveryChargeOutside',
+      'freeDeliveryThreshold',
+      'codFee',
+    ];
+    const sourceCurrency = normalizeCurrencyCode(currentConfig.currencyCode);
+    for (const field of monetaryFields) {
+      const baseValue = field in updateData ? Number(updateData[field]) : Number(currentConfig[field]);
+      updateData[field] = roundCurrencyAmount(
+        convertAmount(baseValue, sourceCurrency, nextCurrencyCode, nextRate),
+        nextCurrencyCode
+      );
+    }
+
+    const products = (await prisma.product.findMany({
+      select: { id: true, priceInside: true, priceOutside: true, originalPrice: true, discountFixed: true },
+    })).map(normalizeProductPrices);
+
+    await prisma.$transaction([
+      prisma.siteConfig.upsert({
+        where: { id: 1 },
+        update: updateData,
+        create: {
+          ...currentConfig,
+          ...updateData,
+          id: 1,
+        },
+      }),
+      ...products.map((product) =>
+        prisma.product.update({
+          where: { id: product.id },
+          data: {
+        priceInside: roundCurrencyAmount(convertAmount(product.priceInside, sourceCurrency, nextCurrencyCode, nextRate), nextCurrencyCode),
+        priceOutside: roundCurrencyAmount(convertAmount(product.priceOutside, sourceCurrency, nextCurrencyCode, nextRate), nextCurrencyCode),
+        originalPrice: product.originalPrice == null ? null : roundCurrencyAmount(convertAmount(product.originalPrice, sourceCurrency, nextCurrencyCode, nextRate), nextCurrencyCode),
+        discountFixed: product.discountFixed == null ? null : roundCurrencyAmount(convertAmount(product.discountFixed, sourceCurrency, nextCurrencyCode, nextRate), nextCurrencyCode),
+          },
+        })
+      ),
+    ]);
+  } else {
+    await prisma.siteConfig.upsert({
+      where: { id: 1 },
+      update: updateData,
+      create: {
+        ...currentConfig,
+        ...updateData,
+        id: 1,
+      },
+    });
+  }
 
   invalidateSiteConfig();
   revalidatePath('/');
@@ -627,19 +696,20 @@ export async function createAdminOrder(data: any): Promise<{ success: boolean; i
     const orderItemsData: any[] = [];
     let subtotal = 0;
 
-    for (const item of data.items) {
-      const product = await prisma.product.findUnique({ where: { id: item.productId } });
-      if (!product) throw new Error(`Product not found: ${item.productId}`);
+      for (const item of data.items) {
+        const product = await prisma.product.findUnique({ where: { id: item.productId } });
+        if (!product) throw new Error(`Product not found: ${item.productId}`);
 
-      const unitPrice = data.isInsideValley ? product.priceInside : product.priceOutside;
-      subtotal += unitPrice * item.quantity;
+        const normalized = normalizeProductPrices(product);
+        const unitPrice = data.isInsideValley ? normalized.priceInside : normalized.priceOutside;
+        subtotal = roundTwoDecimals(subtotal + unitPrice * item.quantity);
 
-      orderItemsData.push({
-        productId: item.productId,
-        quantity: item.quantity,
-        price: unitPrice
-      });
-    }
+        orderItemsData.push({
+          productId: item.productId,
+          quantity: item.quantity,
+          price: unitPrice
+        });
+      }
 
     let couponDiscountAmount = 0;
     let appliedCoupon: any = null;
@@ -652,7 +722,7 @@ export async function createAdminOrder(data: any): Promise<{ success: boolean; i
     }
 
     const codFee = config?.codFee || 0;
-    const finalTotal = subtotal + deliveryCharge + codFee;
+      const finalTotal = roundTwoDecimals(subtotal + deliveryCharge + codFee);
 
     const order = await prisma.$transaction(async (tx) => {
       // Decrement stock

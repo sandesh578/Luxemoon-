@@ -9,6 +9,7 @@ import { ImageUpload } from '@/components/admin/ImageUpload';
 import { VideoUpload } from '@/components/admin/VideoUpload';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { useConfig } from '@/components/Providers';
 
 const RichTextEditor = dynamic(
   () => import('@/components/RichTextEditor').then((mod) => mod.RichTextEditor),
@@ -28,6 +29,8 @@ const getEditProductCacheKey = (id: string) => `admin_edit_product_bootstrap_${i
 export default function EditProduct({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const router = useRouter();
+  const config = useConfig();
+  const currencyLabel = config.currencyCode === 'USD' ? 'USD' : 'NPR';
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -337,15 +340,15 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
           <Section title="Pricing & Stock">
             <div className="space-y-4">
               <div>
-                <Label>Price (Inside)</Label>
+                <Label>{`Price (Inside) - ${currencyLabel}`}</Label>
                 <input type="number" required className="w-full p-2 border rounded-lg text-lg font-bold" value={data.priceInside} onChange={e => set('priceInside', parseInt(e.target.value))} />
               </div>
               <div>
-                <Label>Price (Outside)</Label>
+                <Label>{`Price (Outside) - ${currencyLabel}`}</Label>
                 <input type="number" required className="w-full p-2 border rounded-lg" value={data.priceOutside} onChange={e => set('priceOutside', parseInt(e.target.value))} />
               </div>
               <div>
-                <Label>Original Price (MSRP)</Label>
+                <Label>{`Original Price (MSRP) - ${currencyLabel}`}</Label>
                 <input type="number" className="w-full p-2 border rounded-lg text-stone-500" value={data.originalPrice || ''} onChange={e => set('originalPrice', e.target.value ? parseInt(e.target.value) : null)} />
               </div>
               <div>

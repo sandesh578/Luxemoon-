@@ -8,6 +8,7 @@ import { Loader2, X, ListPlus, HelpCircle, Image as ImageIcon } from 'lucide-rea
 import { ImageUpload } from '@/components/admin/ImageUpload';
 import { VideoUpload } from '@/components/admin/VideoUpload';
 import { toast } from 'sonner';
+import { useConfig } from '@/components/Providers';
 
 const RichTextEditor = dynamic(
   () => import('@/components/RichTextEditor').then((mod) => mod.RichTextEditor),
@@ -26,6 +27,8 @@ interface Category {
 
 export default function NewProduct() {
   const router = useRouter();
+  const config = useConfig();
+  const currencyLabel = config.currencyCode === 'USD' ? 'USD' : 'NPR';
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<{ id: string; name: string }[]>([]);
@@ -256,15 +259,15 @@ export default function NewProduct() {
           <Section title="Pricing & Stock">
             <div className="space-y-4">
               <div>
-                <Label>Price (Inside)</Label>
+                <Label>{`Price (Inside) - ${currencyLabel}`}</Label>
                 <input type="number" required className="w-full p-2 border rounded-lg text-lg font-bold" value={form.priceInside} onChange={e => set('priceInside', e.target.value)} />
               </div>
               <div>
-                <Label>Price (Outside)</Label>
+                <Label>{`Price (Outside) - ${currencyLabel}`}</Label>
                 <input type="number" required className="w-full p-2 border rounded-lg" value={form.priceOutside} onChange={e => set('priceOutside', e.target.value)} />
               </div>
               <div>
-                <Label>Original Price (MSRP)</Label>
+                <Label>{`Original Price (MSRP) - ${currencyLabel}`}</Label>
                 <input type="number" className="w-full p-2 border rounded-lg text-stone-500" value={form.originalPrice} onChange={e => set('originalPrice', e.target.value)} />
               </div>
               <div>

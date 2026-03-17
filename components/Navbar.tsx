@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import dynamic from 'next/dynamic';
+import { formatCurrency } from '@/lib/currency';
 
 const CartDrawer = dynamic(
   () => import('./CartDrawer').then((mod) => mod.CartDrawer),
@@ -65,9 +66,11 @@ export const Navbar = () => {
               </div>
 
               <div className="flex items-center gap-6">
-                <div className="hidden sm:block">
-                  <LanguageSwitcher />
-                </div>
+                {config.languageToggleEnabled && (
+                  <div className="hidden sm:block">
+                    <LanguageSwitcher />
+                  </div>
+                )}
 
                 <button onClick={() => setIsCartOpen(true)} className="relative group">
                   <div className="p-2 text-stone-800 group-hover:text-amber-700 transition-colors">
@@ -89,9 +92,11 @@ export const Navbar = () => {
               <Link href="/shop" onClick={() => setMobileOpen(false)} className="block font-serif text-xl">{t('nav.shop')}</Link>
               <Link href="/about" onClick={() => setMobileOpen(false)} className="block font-serif text-xl">{t('nav.ourStory')}</Link>
               <Link href="/contact" onClick={() => setMobileOpen(false)} className="block font-serif text-xl">{t('nav.contact')}</Link>
-              <div className="pt-2">
-                <LanguageSwitcher />
-              </div>
+              {config.languageToggleEnabled && (
+                <div className="pt-2">
+                  <LanguageSwitcher />
+                </div>
+              )}
             </div>
           )}
         </nav>
@@ -109,7 +114,7 @@ export const Navbar = () => {
               <ShoppingBag className="w-4 h-4" /> {itemCount} {itemCount > 1 ? t('common.items') : t('common.item')}
             </span>
             <span className="flex items-center gap-2 text-sm">
-              {t('common.currency')} {cartTotal.toLocaleString()} <ArrowRight className="w-4 h-4 ml-1" />
+              {formatCurrency(cartTotal, config.currencyCode)} <ArrowRight className="w-4 h-4 ml-1" />
             </span>
           </button>
         </div>

@@ -1,7 +1,7 @@
 import { Resend } from 'resend';
 import { logger } from './logger';
 import { prisma } from './prisma';
-import { getSiteConfig } from './settings';
+import { getSiteConfig } from './settings-server';
 
 const getResendClient = () => {
   const key = process.env.RESEND_API_KEY;

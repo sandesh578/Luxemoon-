@@ -77,7 +77,7 @@ export default function CheckoutPage() {
     placeOrder: isNe ? 'अर्डर गर्नुहोस् (क्यास अन डेलिभरी)' : 'Place Order (Cash on Delivery)',
     thanks: isNe ? 'Luxe Moon छान्नु भएकोमा धन्यवाद।' : 'Thank you for choosing Luxe Moon.',
     termsNote: isNe ? 'अर्डर राखेर तपाईंले हाम्रो नियम तथा सर्तहरू स्वीकार गर्नुहुन्छ।' : 'By placing your order, you agree to our terms & conditions',
-    emptyBag: isNe ? 'तपाईंको ब्याग खाली छ' : 'Your bag is empty',
+    emptyBag: isNe ? 'तपाईंको ब्याग खाली छ' : 'Your cart is empty',
     continueShopping: isNe ? 'किनमेल जारी राख्नुहोस्' : 'Continue Shopping',
     valleyText: isNe ? 'भ्याली भित्र' : 'Kathmandu Valley',
     outsideText: isNe ? 'भ्याली बाहिर' : 'Outside Valley',

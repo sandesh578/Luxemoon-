@@ -24,6 +24,8 @@ import { useRouter } from 'next/navigation';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { toast } from 'sonner';
 import { STATUS_COLORS, STATUS_LABELS, ORDER_STATUSES } from '@/lib/constants';
+import { useConfig } from '@/components/Providers';
+import { formatCurrency } from '@/lib/currency';
 
 interface AdminProduct { name: string; }
 interface AdminOrderItem { id: string; quantity: number; price: number; product: AdminProduct; }
@@ -82,6 +84,8 @@ const getDayLabel = (value: Date | string) =>
   }).format(new Date(value));
 
 export const AdminOrderTable = ({ orders }: { orders: Order[] }) => {
+  const config = useConfig();
+  const formatPrice = (amount: number) => formatCurrency(amount, config.currencyCode);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [resendingId, setResendingId] = useState<string | null>(null);
   const [paymentLoadingId, setPaymentLoadingId] = useState<string | null>(null);
@@ -418,7 +422,7 @@ export const AdminOrderTable = ({ orders }: { orders: Order[] }) => {
                           </div>
 
                           <div className="md:col-span-2">
-                            <div className="text-sm font-bold text-stone-900">NPR {order.total.toLocaleString()}</div>
+                            <div className="text-sm font-bold text-stone-900">{formatPrice(order.total)}</div>
                             <div className="mt-2">
                               <select
                                 className={`w-full text-xs font-bold rounded-full px-3 py-1.5 border-none focus:ring-2 focus:ring-amber-500 cursor-pointer ${STATUS_COLORS[order.status] || 'bg-gray-100'}`}
@@ -541,7 +545,7 @@ export const AdminOrderTable = ({ orders }: { orders: Order[] }) => {
                                 {detail.items.map(item => (
                                   <div key={item.id} className="text-xs bg-white border border-stone-200 rounded-lg p-2 flex items-center justify-between gap-2">
                                     <span className="text-stone-700 truncate">{item.product.name}</span>
-                                    <span className="font-semibold text-stone-900 whitespace-nowrap">{item.quantity}x NPR {item.price.toLocaleString()}</span>
+                                    <span className="font-semibold text-stone-900 whitespace-nowrap">{item.quantity}x {formatPrice(item.price)}</span>
                                   </div>
                                 ))}
                               </div>
@@ -655,22 +659,15 @@ export const AdminOrderTable = ({ orders }: { orders: Order[] }) => {
           setConfirmAction(null);
           setCancelReason('');
         }}
-      />
-      {
-        confirmAction && (
-          <div className="fixed inset-0 z-[51] flex items-center justify-center p-4 pointer-events-none">
-            <div className="pointer-events-auto mt-32">
-              <input
-                autoFocus
-                placeholder="Cancellation reason"
-                value={cancelReason}
-                onChange={e => setCancelReason(e.target.value)}
-                className="p-2 border border-stone-200 rounded-lg text-sm w-64"
-              />
-            </div>
-          </div>
-        )
-      }
+      >
+        <input
+          autoFocus
+          placeholder="Cancellation reason"
+          value={cancelReason}
+          onChange={e => setCancelReason(e.target.value)}
+          className="w-full p-3 border border-stone-200 rounded-xl text-sm focus:ring-2 focus:ring-red-200 focus:border-red-500 outline-none transition-all"
+        />
+      </ConfirmModal>
     </div>
   );
 };

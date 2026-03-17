@@ -1,4 +1,4 @@
-import { getSiteConfig } from '@/lib/settings';
+import { getSiteConfig } from '@/lib/settings-server';
 import { translate } from '@/lib/i18n';
 import { getLocaleServer } from '@/lib/i18n-server';
 import { sanitizeAdminHtml } from '@/lib/sanitize-admin-html';

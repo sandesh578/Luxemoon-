@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { headers } from 'next/headers';
-import { getSiteConfig } from '@/lib/settings';
+import { getSiteConfig } from '@/lib/settings-server';
 import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
