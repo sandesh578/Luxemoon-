@@ -160,11 +160,15 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const startedAt = Date.now();
   const { slug } = await params;
-  const [product, config] = await Promise.all([getProduct(slug), getSiteConfig()]);
+  
+  // Serialize queries to avoid Prisma connection pool exhaustion during build
+  const product = await getProduct(slug);
+  if (!product) notFound();
+
+  const config = await getSiteConfig();
+  
   const currencyCode = config.currencyCode === 'NPR' ? 'NPR' : 'USD';
   const formatPrice = (amount: number) => formatCurrency(amount, currencyCode);
-
-  if (!product) notFound();
 
   // Phase 5: Graceful No Longer Available view
   if (!product.isActive || product.isArchived || product.isDraft) {
