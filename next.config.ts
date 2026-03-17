@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   experimental: {
+    staticGenerationMaxConcurrency: 1,
     optimizePackageImports: ['lucide-react'],
     serverActions: {
       bodySizeLimit: '2mb',
