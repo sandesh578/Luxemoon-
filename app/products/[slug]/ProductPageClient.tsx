@@ -105,8 +105,8 @@ export default function ProductPageClient({ product }: { product: ProductData })
     const [touchStart, setTouchStart] = useState<number | null>(null);
     const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
-    const mediaCount = product.images.length + (product.videoUrl ? 1 : 0);
-    const currentIndex = showVideo ? product.images.length : selectedImage;
+    const mediaCount = (product.images?.length || 0) + (product.videoUrl ? 1 : 0);
+    const currentIndex = showVideo ? (product.images?.length || 0) : selectedImage;
 
     const handleNext = () => {
         const nextIndex = (currentIndex + 1) % mediaCount;
@@ -193,10 +193,10 @@ export default function ProductPageClient({ product }: { product: ProductData })
     };
 
     const detailHighlights = [
-        { icon: CheckCircle2, text: product.features[0] || 'Smooth Finish' },
-        { icon: Droplets, text: product.features[1] || 'Deep Hydration' },
-        { icon: Leaf, text: product.features[2] || 'Keratin Infused' },
-        { icon: FlaskConical, text: product.features[3] || 'Biotin Strength' },
+        { icon: CheckCircle2, text: (product.features && product.features[0]) || 'Smooth Finish' },
+        { icon: Droplets, text: (product.features && product.features[1]) || 'Deep Hydration' },
+        { icon: Leaf, text: (product.features && product.features[2]) || 'Keratin Infused' },
+        { icon: FlaskConical, text: (product.features && product.features[3]) || 'Biotin Strength' },
     ];
 
     useEffect(() => {
@@ -220,7 +220,7 @@ export default function ProductPageClient({ product }: { product: ProductData })
                 name: product.name,
                 priceInside: product.priceInside,
                 originalPrice: product.originalPrice || null,
-                images: product.images,
+                images: product.images || [],
             };
             const next = [current, ...parsed.filter(p => p.id !== current.id)].slice(0, 8);
             localStorage.setItem(key, JSON.stringify(next));
@@ -254,7 +254,7 @@ export default function ProductPageClient({ product }: { product: ProductData })
                             )
                         ) : (
                             <Image
-                                src={optimizeImage(product.images[selectedImage] || product.images[0])}
+                                src={optimizeImage((product.images && product.images[selectedImage]) || (product.images && product.images[0]) || '')}
                                 alt={product.name}
                                 fill
                                 sizes="(max-width: 1024px) 100vw, 50vw"
@@ -279,7 +279,7 @@ export default function ProductPageClient({ product }: { product: ProductData })
                         )}
                     </div>
                     <div className="flex gap-2 overflow-x-auto pb-2">
-                        {product.images.map((img, i) => (
+                        {product.images && product.images.map((img, i) => (
                             <button
                                 key={i}
                                 onClick={() => { setSelectedImage(i); setShowVideo(false); }}
@@ -320,7 +320,7 @@ export default function ProductPageClient({ product }: { product: ProductData })
                         </div>
                         <h1 className="font-serif text-3xl md:text-5xl font-bold text-stone-900 mt-1">{product.name}</h1>
                         <p className="mt-3 text-stone-600 text-lg leading-relaxed max-w-xl">
-                            {product.features[0] || 'Designed for a silky, glass-like finish with salon-grade Korean care.'}
+                            {(product.features && product.features[0]) || 'Designed for a silky, glass-like finish with salon-grade Korean care.'}
                         </p>
                         {avgRating && (
                             <div className="flex items-center gap-2 mt-2">
@@ -398,7 +398,7 @@ export default function ProductPageClient({ product }: { product: ProductData })
                         <div className="min-h-[200px] animate-in fade-in slide-in-from-bottom-2 duration-500">
                             {activeTab === 'benefits' && (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    {product.benefits.length > 0 ? (
+                                    {product.benefits && product.benefits.length > 0 ? (
                                         product.benefits.map((benefit, i) => (
                                             <div key={i} className="flex gap-3 bg-stone-50 p-4 rounded-xl border border-stone-100">
                                                 <CheckCircle2 className="w-5 h-5 text-amber-600 flex-shrink-0" />
@@ -406,7 +406,7 @@ export default function ProductPageClient({ product }: { product: ProductData })
                                             </div>
                                         ))
                                     ) : (
-                                        product.features.map((f, i) => (
+                                        product.features && product.features.map((f, i) => (
                                             <div key={i} className="flex gap-3 bg-stone-50 p-4 rounded-xl border border-stone-100">
                                                 <CheckCircle2 className="w-5 h-5 text-amber-600 flex-shrink-0" />
                                                 <span className="text-sm text-stone-700 font-medium">{f}</span>

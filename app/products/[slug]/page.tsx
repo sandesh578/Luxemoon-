@@ -71,10 +71,16 @@ const getProduct = unstable_cache(
         originalPrice: data.originalPrice ? Number(data.originalPrice) : null,
         reviews: data.reviews.map(r => ({ ...r, createdAt: r.createdAt.toISOString() })),
         transformations: data.transformations.map(t => ({ ...t, createdAt: t.createdAt.toISOString() })),
-        category: data.category?.name || 'Uncategorized'
+        category: data.category?.name || 'Uncategorized',
+        // Ensure Dates are serializable
+        createdAt: data.createdAt.toISOString(),
+        updatedAt: data.updatedAt.toISOString(),
+        deletedAt: data.deletedAt?.toISOString() || null,
+        discountStart: data.discountStart?.toISOString() || null,
+        discountEnd: data.discountEnd?.toISOString() || null,
     };
   },
-  ['product-detail'],
+  ['product-detail-slug'],
   { tags: ['products', 'reviews', 'transformations'], revalidate: 300 }
 );
 
@@ -92,7 +98,7 @@ const getUnavailableSuggestions = unstable_cache(
         originalPrice: p.originalPrice ? Number(p.originalPrice) : null,
     }));
   },
-  ['unavailable-product-suggestions'],
+  ['unavailable-product-suggestions-list'],
   { tags: ['products'], revalidate: 300 }
 );
 
@@ -120,7 +126,7 @@ const getRelatedProducts = unstable_cache(
         originalPrice: r.originalPrice ? Number(r.originalPrice) : null,
     }));
   },
-  ['related-products'],
+  ['related-products-by-cat'],
   { tags: ['products'], revalidate: 300 }
 );
 
@@ -130,8 +136,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!product) return {};
 
   const title = product.seoTitle || `${product.name} | Luxe Moon`;
-  const description = product.seoDescription || product.description.slice(0, 160);
-  const image = product.images[0] || '';
+  const description = product.seoDescription || (product.description || '').slice(0, 160);
+  const image = (product.images && product.images[0]) || '';
 
   return {
     title,
@@ -204,7 +210,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       ...rest,
       sanitizedMarketingDescription: rest.marketingDescription ? sanitizeAdminHtml(rest.marketingDescription) : null,
       category: catStr,
-      faqs: (rest.faqs as any[] || []) as any,
+      faqs: (Array.isArray(rest.faqs) ? rest.faqs : []) as any,
       relatedProducts,
       transformations: transformations.map(t => ({
         ...t,

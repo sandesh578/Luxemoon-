@@ -27,7 +27,7 @@ type Props = {
 
 const REVIEWS_PER_PAGE = 10;
 
-export default function ProductReviewsSection({ productId, reviews }: Props) {
+export default function ProductReviewsSection({ productId, reviews = [] }: Props) {
   const [reviewError, setReviewError] = useState<string | null>(null);
   const [reviewMediaModal, setReviewMediaModal] = useState<{ images: string[]; index: number } | null>(null);
   const [reviewRatingFilter, setReviewRatingFilter] = useState<number | 'all'>('all');
@@ -46,18 +46,19 @@ export default function ProductReviewsSection({ productId, reviews }: Props) {
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [reviewPage, setReviewPage] = useState(1);
 
-  const avgRating = reviews.length > 0 ? (reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length).toFixed(1) : null;
+  const safeReviews = useMemo(() => Array.isArray(reviews) ? reviews : [], [reviews]);
+  const avgRating = safeReviews.length > 0 ? (safeReviews.reduce((sum, review) => sum + review.rating, 0) / safeReviews.length).toFixed(1) : null;
 
   const ratingCounts = useMemo(() => {
     const counts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-    reviews.forEach((review) => {
+    safeReviews.forEach((review) => {
       if (review.rating >= 1 && review.rating <= 5) counts[review.rating as keyof typeof counts]++;
     });
     return counts;
-  }, [reviews]);
+  }, [safeReviews]);
 
-  const featuredReviews = useMemo(() => reviews.filter((review) => review.isFeatured), [reviews]);
-  const standardReviews = useMemo(() => reviews.filter((review) => !review.isFeatured), [reviews]);
+  const featuredReviews = useMemo(() => safeReviews.filter((review) => review.isFeatured), [safeReviews]);
+  const standardReviews = useMemo(() => safeReviews.filter((review) => !review.isFeatured), [safeReviews]);
 
   const filteredStandardReviews = useMemo(() => {
     const base = standardReviews.filter((review) => {
