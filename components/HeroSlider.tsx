@@ -27,7 +27,7 @@ export const HeroSlider = ({ slides }: { slides: Slide[] }) => {
     if (!slides || slides.length === 0) return null;
 
     return (
-        <div className="relative h-[85vh] md:h-[90vh] w-full overflow-hidden bg-stone-900">
+        <div className="relative w-full aspect-[4/3] sm:aspect-video overflow-hidden bg-stone-900">
             {slides.map((slide, index) => (
                 <div
                     key={index}
@@ -37,26 +37,26 @@ export const HeroSlider = ({ slides }: { slides: Slide[] }) => {
                     <Image
                         src={slide.image || "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"}
                         fill
-                        className="object-cover"
+                        className="object-cover object-[15%_center] md:object-center"
                         alt={slide.title}
                         sizes="100vw"
                         priority={index === 0}
                         loading={index === 0 ? 'eager' : 'lazy'}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-stone-900 via-stone-900/10 to-transparent" />
+                    <div className="absolute inset-0 bg-black/20 md:bg-black/10 bg-gradient-to-t from-stone-900/90 via-transparent to-stone-900/40" />
 
                     <div className="absolute inset-0 flex items-center justify-center text-center px-4">
-                        <div className={`max-w-4xl space-y-6 transition-all duration-700 ${index === current ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
-                            <h2 className="font-serif text-5xl md:text-7xl lg:text-8xl text-stone-50 leading-[1.1]">
+                        <div className={`max-w-4xl space-y-4 md:space-y-6 transition-all duration-700 ${index === current ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+                            <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl text-white leading-[1.1] drop-shadow-xl">
                                 {slide.title}
                             </h2>
-                            <p className="text-stone-200 text-lg md:text-xl font-light tracking-wide max-w-2xl mx-auto leading-relaxed">
+                            <p className="text-stone-100 text-sm sm:text-base md:text-lg font-light tracking-wide max-w-2xl mx-auto leading-relaxed drop-shadow-md">
                                 {slide.subtitle}
                             </p>
-                            <div className="pt-6">
+                            <div className="pt-4 md:pt-6">
                                 <Link
                                     href={slide.link || '/shop'}
-                                    className="inline-flex items-center gap-2 group px-8 py-4 bg-amber-600 text-white font-bold rounded-2xl hover:bg-amber-500 transition-all shadow-xl shadow-amber-900/20"
+                                    className="inline-flex items-center gap-2 group px-6 py-3 md:px-8 md:py-4 bg-amber-600 text-white font-bold rounded-2xl hover:bg-amber-500 transition-all shadow-xl shadow-amber-900/30 text-sm md:text-base"
                                 >
                                     {slide.buttonText || 'SHOP COLLECTION'}
                                     <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
