@@ -649,6 +649,7 @@ export async function updateHomepageContent(data: any): Promise<{ success: boole
         heritageSubtitle: data.heritageSubtitle !== undefined ? data.heritageSubtitle : undefined,
         heritageTitle: data.heritageTitle !== undefined ? data.heritageTitle : undefined,
         heritageBody: data.heritageBody !== undefined ? data.heritageBody : undefined,
+        communityReviews: data.communityReviews || [],
       }
     });
     invalidateSiteConfig();
@@ -659,6 +660,19 @@ export async function updateHomepageContent(data: any): Promise<{ success: boole
     logger.error("Failed to update homepage content", error);
     return { success: false, error: "Database error" };
   }
+}
+
+export async function getProductsForDropdown() {
+  await verifyAdmin();
+  return prisma.product.findMany({
+    where: { isActive: true, isArchived: false, isDraft: false },
+    select: { id: true, name: true, images: true },
+    orderBy: { createdAt: 'desc' }
+  }).then(products => products.map(p => ({
+    id: p.id,
+    name: p.name,
+    image: p.images?.[0] || ''
+  })));
 }
 
 export async function resendNotification(orderId: string, type: 'SMS' | 'EMAIL'): Promise<{ success: boolean; error?: string }> {

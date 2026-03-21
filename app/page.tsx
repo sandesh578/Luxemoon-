@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { OptimizedImage as Image } from '@/components/OptimizedImage';
 import { prisma } from '@/lib/prisma';
 import { HeroSlider } from '@/components/HeroSlider';
+import { CommunitySlider } from '@/components/CommunitySlider';
 import { ChevronRight, Star, ShieldCheck, Zap, ArrowRight } from 'lucide-react';
 import { QuickAddButton } from '@/components/QuickAddButton';
 import { translate } from '@/lib/i18n';
@@ -21,6 +22,7 @@ const getCachedHomepageData = unstable_cache(
       newArrivalsRaw,
       manualBestSellersRaw,
       nanoplastiaProductsRaw,
+      allActiveProductsRaw,
     ] = await Promise.all([
       getSiteConfig(),
       prisma.homepageContent.findUnique({ where: { id: 1 } }),
@@ -41,6 +43,7 @@ const getCachedHomepageData = unstable_cache(
         orderBy: { createdAt: 'desc' },
       }),
       prisma.product.findMany({
+        // @ts-ignore – isBestSeller added via migration, not yet reflected in generated types
         where: { isActive: true, isArchived: false, isDraft: false, isBestSeller: true },
         select: {
           id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, discountPercent: true, discountFixed: true, discountStart: true, discountEnd: true
@@ -63,6 +66,12 @@ const getCachedHomepageData = unstable_cache(
         take: 3,
         orderBy: { createdAt: 'asc' },
       }),
+      prisma.product.findMany({
+        where: { isActive: true, isArchived: false, isDraft: false },
+        select: {
+          id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, discountPercent: true, discountFixed: true, discountStart: true, discountEnd: true
+        }
+      }),
     ]);
 
     const sanitizeProducts = (products: any[]) => products.map(p => ({
@@ -70,6 +79,15 @@ const getCachedHomepageData = unstable_cache(
         priceInside: calculateDiscountedPrice(Number(p.priceInside), p as any, config as any),
         originalPrice: p.originalPrice ? Number(p.originalPrice) : null,
     }));
+
+    const communityReviewsRaw = Array.isArray((content as any)?.communityReviews) ? (content as any).communityReviews : [];
+    const fullCommunityReviews = communityReviewsRaw.map((r: any) => {
+       if (!r.productId) return r;
+       const p = allActiveProductsRaw.find(prod => prod.id === r.productId);
+       if (!p) return r;
+       const sp = sanitizeProducts([p])[0];
+       return { ...r, product: { ...sp, image: sp.images?.[0] || 'https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?q=80&w=200' } };
+    });
 
     let bestSellersRaw = manualBestSellersRaw;
     if (manualBestSellersRaw.length < 4) {
@@ -86,14 +104,15 @@ const getCachedHomepageData = unstable_cache(
         take: 4 - manualBestSellersRaw.length,
         orderBy: { orderItems: { _count: 'desc' } },
       });
-      bestSellersRaw = [...manualBestSellersRaw, ...topSellingRaw];
+      bestSellersRaw = [...manualBestSellersRaw, ...topSellingRaw] as any[];
     }
     return [
         content,
         sanitizeProducts(featuredProductsRaw),
         sanitizeProducts(newArrivalsRaw),
         sanitizeProducts(bestSellersRaw),
-        sanitizeProducts(nanoplastiaProductsRaw)
+        sanitizeProducts(nanoplastiaProductsRaw),
+        fullCommunityReviews
     ] as const;
   },
   ['home-page-data'],
@@ -104,7 +123,7 @@ export default async function Home() {
   const locale = await getLocaleServer();
   const t = (key: string, vars?: Record<string, string | number>) => translate(locale, key, vars);
   const [homeData, config] = await Promise.all([getCachedHomepageData(), getSiteConfig()]);
-  const [content, featuredProducts, newArrivals, bestSellers, nanoplastiaProducts] = homeData;
+  const [content, featuredProducts, newArrivals, bestSellers, nanoplastiaProducts, communityReviews] = homeData;
   const currencyCode = config.currencyCode === 'NPR' ? 'NPR' : 'USD';
   const formatPrice = (amount: number) => formatCurrency(amount, currencyCode);
 
@@ -137,6 +156,13 @@ export default async function Home() {
           <TrustItem icon={<ShieldCheck className="w-4 h-4 text-amber-500" />} text={t('home.trustAuthentic')} />
         </div>
       </div>
+
+      {/* Community / Influencer Reviews */}
+      {communityReviews && communityReviews.length > 0 && (
+        <section className="bg-[#FDFCFB]">
+          <CommunitySlider reviews={communityReviews as any} currencyCode={currencyCode} formatPrice={formatPrice} />
+        </section>
+      )}
 
       {/* Brand Philosophy */}
       <section className="py-24 px-4 bg-white relative overflow-hidden">

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { Loader2, Plus, X, MoveUp, MoveDown, Save, Megaphone, Monitor, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
-import { getHomepageContent, updateHomepageContent } from '../actions';
+import { getHomepageContent, updateHomepageContent, getProductsForDropdown } from '../actions';
 import { ImageUpload } from '@/components/admin/ImageUpload';
 
 const RichTextEditor = dynamic(
@@ -30,6 +30,12 @@ interface Banner {
     title?: string;
 }
 
+interface CommunityReview {
+    mediaUrl: string;
+    mediaType: 'video' | 'image';
+    productId: string;
+}
+
 export default function HomepageManager() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -37,6 +43,8 @@ export default function HomepageManager() {
     const [heroSlides, setHeroSlides] = useState<HeroSlide[]>([]);
     const [banners, setBanners] = useState<Banner[]>([]);
     const [promotionalImages, setPromotionalImages] = useState<string[]>([]);
+    const [communityReviews, setCommunityReviews] = useState<CommunityReview[]>([]);
+    const [products, setProducts] = useState<{id: string, name: string, image: string}[]>([]);
     const [noticeBar, setNoticeBar] = useState({ text: '', enabled: false });
     const [heritage, setHeritage] = useState({ subtitle: '', title: '', body: '' });
 
@@ -46,11 +54,13 @@ export default function HomepageManager() {
 
     const fetchContent = async () => {
         try {
-            const data = await getHomepageContent();
+            const [data, productsData] = await Promise.all([getHomepageContent(), getProductsForDropdown()]);
+            setProducts(productsData || []);
             if (data) {
                 setHeroSlides((data.heroSlides as unknown as HeroSlide[]) || []);
                 setBanners((data.banners as unknown as Banner[]) || []);
                 setPromotionalImages((data.promotionalImages as string[]) || []);
+                setCommunityReviews((data as any).communityReviews || []);
                 setHeritage({
                     subtitle: (data as any).heritageSubtitle || '',
                     title: (data as any).heritageTitle || '',
@@ -79,6 +89,7 @@ export default function HomepageManager() {
             heritageSubtitle: heritage.subtitle,
             heritageTitle: heritage.title,
             heritageBody: heritage.body,
+            communityReviews,
         });
         if (res.success) {
             toast.success('Homepage updated!');
@@ -270,6 +281,89 @@ export default function HomepageManager() {
                         </div>
                     ))}
                     {banners.length === 0 && <div className="md:col-span-2 p-12 text-center border-2 border-dashed rounded-2xl text-stone-400">No banners added.</div>}
+                </div>
+            </section>
+
+            {/* Community Reviews */}
+            <section className="space-y-4">
+                <div className="flex justify-between items-center">
+                    <h2 className="text-xl font-serif font-bold text-stone-900 flex items-center gap-2">
+                        <ImageIcon className="text-stone-400 w-5 h-5" />
+                        Loved by the Community
+                    </h2>
+                    <button
+                        onClick={() => setCommunityReviews([...communityReviews, { mediaUrl: '', mediaType: 'video', productId: '' }])}
+                        className="text-amber-700 font-bold text-sm bg-amber-50 px-3 py-1.5 rounded-lg hover:bg-amber-100 transition-colors"
+                    >
+                        + Add Review
+                    </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {communityReviews.map((review, i) => (
+                        <div key={i} className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm relative group">
+                            <button onClick={() => setCommunityReviews(communityReviews.filter((_, idx) => idx !== i))} className="absolute top-4 right-4 text-stone-400 hover:text-red-500 z-10">
+                                <X className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => {
+                                const next = [...communityReviews];
+                                if (i > 0) {
+                                    [next[i], next[i - 1]] = [next[i - 1], next[i]];
+                                    setCommunityReviews(next);
+                                }
+                            }} className="absolute top-4 right-10 text-stone-400 hover:text-stone-900 z-10">
+                                <MoveUp className="w-4 h-4" />
+                            </button>
+
+                            <div className="space-y-4">
+                                <div className="flex gap-4 mb-2">
+                                    <label className="flex items-center gap-2 cursor-pointer text-sm font-bold text-stone-700">
+                                        <input type="radio" checked={review.mediaType === 'video'} onChange={() => {
+                                            const next = [...communityReviews];
+                                            next[i].mediaType = 'video';
+                                            setCommunityReviews(next);
+                                        }} className="text-amber-600" /> Video
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer text-sm font-bold text-stone-700">
+                                        <input type="radio" checked={review.mediaType === 'image'} onChange={() => {
+                                            const next = [...communityReviews];
+                                            next[i].mediaType = 'image';
+                                            setCommunityReviews(next);
+                                        }} className="text-amber-600" /> Image
+                                    </label>
+                                </div>
+
+                                <ImageUpload 
+                                    images={review.mediaUrl ? [review.mediaUrl] : []} 
+                                    onChange={urls => {
+                                        const next = [...communityReviews];
+                                        next[i].mediaUrl = urls[0] || '';
+                                        setCommunityReviews(next);
+                                    }} 
+                                    maxImages={1} 
+                                />
+                                
+                                <div>
+                                    <label className="block text-xs font-bold text-stone-400 uppercase mb-1">Linked Product</label>
+                                    <select 
+                                        className="w-full p-2 border rounded-lg text-sm bg-stone-50"
+                                        value={review.productId || ''}
+                                        onChange={e => {
+                                            const next = [...communityReviews];
+                                            next[i].productId = e.target.value;
+                                            setCommunityReviews(next);
+                                        }}
+                                    >
+                                        <option value="">Select a product...</option>
+                                        {products.map(p => (
+                                            <option key={p.id} value={p.id}>{p.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                    {communityReviews.length === 0 && <div className="md:col-span-2 lg:col-span-3 p-12 text-center border-2 border-dashed rounded-2xl text-stone-400">No community reviews added.</div>}
                 </div>
             </section>
 

@@ -340,6 +340,9 @@ model HomepageContent {
   heritageSubtitle  String? @default("OUR HERITAGE")
   heritageTitle     String? @default("Honoring the Art of Korean Cosmetics.")
   heritageBody      String? @db.Text @default("Luxe Moon brings the sophisticated tradition of Korean beauty innovation to you. Our formulas combine ancient botanical wisdom with modern technology, delivering professional salon results in the comfort of your home.")
+  
+  // Community Influencer Config
+  communityReviews  Json    @default("[]") // Array of { mediaUrl, mediaType: "video"|"image", productId }
 }
 
 model NotificationTemplate {
