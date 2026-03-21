@@ -5,6 +5,11 @@ const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
   reactStrictMode: true,
+  output: "standalone",
+  outputFileTracingIncludes: {
+    '/*': ['./node_modules/@prisma/client/**/*', './node_modules/.prisma/client/**/*'],
+    '/api/**/*': ['./node_modules/@prisma/client/**/*', './node_modules/.prisma/client/**/*'],
+  },
   experimental: {
     staticGenerationMaxConcurrency: 1,
     optimizePackageImports: ['lucide-react'],
