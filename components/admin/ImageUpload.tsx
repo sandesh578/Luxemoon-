@@ -16,7 +16,8 @@ export function ImageUpload({ images, onChange, maxImages = 5, folder = 'luxemoo
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState('');
 
-    const context = folder.includes('logos') ? 'logos' : 'products';
+    const normalizedFolder = folder.toLowerCase();
+    const context = normalizedFolder.includes('logo') || normalizedFolder.includes('brand') ? 'logos' : 'products';
 
     const onDrop = useCallback(async (acceptedFiles: File[]) => {
         if (images.length + acceptedFiles.length > maxImages) {
@@ -84,7 +85,12 @@ export function ImageUpload({ images, onChange, maxImages = 5, folder = 'luxemoo
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
-        accept: { 'image/*': ['.jpeg', '.jpg', '.png', '.webp'] },
+        accept: {
+            'image/jpeg': ['.jpeg', '.jpg'],
+            'image/png': ['.png'],
+            'image/webp': ['.webp'],
+            'image/svg+xml': ['.svg'],
+        },
         maxSize: 10 * 1024 * 1024,
         disabled: uploading,
     });
@@ -177,7 +183,7 @@ export function ImageUpload({ images, onChange, maxImages = 5, folder = 'luxemoo
                                 {isDragActive ? 'Drop images here' : 'Drag & drop images, or click to select'}
                             </span>
                             <span className="text-xs text-stone-400">
-                                JPG, PNG, WebP up to 10MB • {images.length}/{maxImages} uploaded
+                                JPG, PNG, WebP, SVG up to 10MB | {images.length}/{maxImages} uploaded
                             </span>
                         </div>
                     )}
@@ -188,3 +194,4 @@ export function ImageUpload({ images, onChange, maxImages = 5, folder = 'luxemoo
         </div>
     );
 }
+

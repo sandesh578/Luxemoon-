@@ -1,13 +1,23 @@
 import { NextResponse } from 'next/server';
+import { unstable_cache } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { verifyAdmin } from '@/lib/auth';
 
-export async function GET() {
-    try {
-        const categories = await prisma.category.findMany({
+export const revalidate = 300;
+
+const getCachedCategories = unstable_cache(
+    async () =>
+        prisma.category.findMany({
             where: { deletedAt: null },
             orderBy: { name: 'asc' },
-        });
+        }),
+    ['api-categories-list'],
+    { revalidate: 300, tags: ['categories'] }
+);
+
+export async function GET() {
+    try {
+        const categories = await getCachedCategories();
         return NextResponse.json(categories);
     } catch (error) {
         return NextResponse.json({ error: 'Failed to fetch categories' }, { status: 500 });

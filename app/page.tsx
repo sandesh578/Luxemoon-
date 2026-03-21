@@ -10,11 +10,60 @@ import { unstable_cache } from 'next/cache';
 import { formatCurrency } from '@/lib/currency';
 import { calculateDiscountedPrice } from '@/lib/settings';
 import { getSiteConfig } from '@/lib/settings-server';
+import { sanitizeAdminHtml } from '@/lib/sanitize-admin-html';
 
 const getCachedHomepageData = unstable_cache(
   async () => {
-    const config = await getSiteConfig();
-    const content = await prisma.homepageContent.findUnique({ where: { id: 1 } });
+    const [
+      config,
+      content,
+      featuredProductsRaw,
+      newArrivalsRaw,
+      manualBestSellersRaw,
+      nanoplastiaProductsRaw,
+    ] = await Promise.all([
+      getSiteConfig(),
+      prisma.homepageContent.findUnique({ where: { id: 1 } }),
+      prisma.product.findMany({
+        where: { isActive: true, isArchived: false, isDraft: false, isFeatured: true },
+        select: {
+          id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, isFeatured: true, discountPercent: true, discountFixed: true, discountStart: true, discountEnd: true
+        },
+        take: 4,
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.product.findMany({
+        where: { isActive: true, isArchived: false, isDraft: false, isNew: true },
+        select: {
+          id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, isNew: true, discountPercent: true, discountFixed: true, discountStart: true, discountEnd: true
+        },
+        take: 4,
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.product.findMany({
+        where: { isActive: true, isArchived: false, isDraft: false, isBestSeller: true },
+        select: {
+          id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, discountPercent: true, discountFixed: true, discountStart: true, discountEnd: true
+        },
+        take: 4,
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.product.findMany({
+        where: {
+          isActive: true,
+          isArchived: false,
+          isDraft: false,
+          slug: {
+            in: ['anti-hair-fall-shampoo', 'shining-silk-hair-mask', 'soft-silky-serum'],
+          },
+        },
+        select: {
+          id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, isNew: true, stock: true, discountPercent: true, discountFixed: true, discountStart: true, discountEnd: true
+        },
+        take: 3,
+        orderBy: { createdAt: 'asc' },
+      }),
+    ]);
 
     const sanitizeProducts = (products: any[]) => products.map(p => ({
         ...p,
@@ -22,46 +71,23 @@ const getCachedHomepageData = unstable_cache(
         originalPrice: p.originalPrice ? Number(p.originalPrice) : null,
     }));
 
-    const featuredProductsRaw = await prisma.product.findMany({
-      where: { isActive: true, isArchived: false, isDraft: false, isFeatured: true },
-      select: {
-        id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, isFeatured: true, discountPercent: true, discountFixed: true, discountStart: true, discountEnd: true
-      },
-      take: 4,
-      orderBy: { createdAt: 'desc' },
-    });
-    const newArrivalsRaw = await prisma.product.findMany({
-      where: { isActive: true, isArchived: false, isDraft: false, isNew: true },
-      select: {
-        id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, isNew: true, discountPercent: true, discountFixed: true, discountStart: true, discountEnd: true
-      },
-      take: 4,
-      orderBy: { createdAt: 'desc' },
-    });
-    const bestSellersRaw = await prisma.product.findMany({
-      where: { isActive: true, isArchived: false, isDraft: false },
-      select: {
-        id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, discountPercent: true, discountFixed: true, discountStart: true, discountEnd: true
-      },
-      take: 4,
-      orderBy: { orderItems: { _count: 'desc' } },
-    });
-    const nanoplastiaProductsRaw = await prisma.product.findMany({
-      where: {
-        isActive: true,
-        isArchived: false,
-        isDraft: false,
-        slug: {
-          in: ['anti-hair-fall-shampoo', 'shining-silk-hair-mask', 'soft-silky-serum'],
+    let bestSellersRaw = manualBestSellersRaw;
+    if (manualBestSellersRaw.length < 4) {
+      const topSellingRaw = await prisma.product.findMany({
+        where: { 
+          isActive: true, 
+          isArchived: false, 
+          isDraft: false,
+          id: { notIn: manualBestSellersRaw.map(p => p.id) }
         },
-      },
-      select: {
-        id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, isNew: true, stock: true, discountPercent: true, discountFixed: true, discountStart: true, discountEnd: true
-      },
-      take: 3,
-      orderBy: { createdAt: 'asc' },
-    });
-
+        select: {
+          id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, discountPercent: true, discountFixed: true, discountStart: true, discountEnd: true
+        },
+        take: 4 - manualBestSellersRaw.length,
+        orderBy: { orderItems: { _count: 'desc' } },
+      });
+      bestSellersRaw = [...manualBestSellersRaw, ...topSellingRaw];
+    }
     return [
         content,
         sanitizeProducts(featuredProductsRaw),
@@ -128,13 +154,22 @@ export default async function Home() {
           </div>
           <div className="space-y-8">
             <div className="space-y-4">
-              <span className="text-amber-600 font-bold tracking-[0.2em] text-xs uppercase">{t('home.heritageLabel')}</span>
-              <h2 className="text-4xl md:text-5xl font-serif text-stone-900 leading-tight">
-                {t('home.heritageTitleLine1')} <br /><span className="italic text-amber-700">{t('home.heritageTitleLine2')}</span>
+              <span className="text-amber-600 font-bold tracking-[0.2em] text-xs uppercase">{(content as any)?.heritageSubtitle || t('home.heritageLabel')}</span>
+              <h2 className="text-4xl md:text-5xl font-serif text-stone-900 leading-tight whitespace-pre-line">
+                {(content as any)?.heritageTitle || (
+                  <>{t('home.heritageTitleLine1')} <br/><span className="italic text-amber-700">{t('home.heritageTitleLine2')}</span></>
+                )}
               </h2>
-              <p className="text-stone-600 leading-relaxed text-lg">
-                {t('home.heritageBody')}
-              </p>
+              {(content as any)?.heritageBody ? (
+                <div
+                  className="prose prose-lg max-w-none text-stone-600 prose-headings:font-serif prose-headings:text-stone-900 prose-a:text-amber-600"
+                  dangerouslySetInnerHTML={{ __html: sanitizeAdminHtml((content as any).heritageBody) }}
+                />
+              ) : (
+                <p className="text-stone-600 leading-relaxed text-lg whitespace-pre-line">
+                  {t('home.heritageBody')}
+                </p>
+              )}
             </div>
             <Link href="/about" className="group inline-flex items-center gap-2 font-bold text-stone-900 border-b-2 border-amber-600 pb-1 hover:text-amber-700 transition-colors">
               {t('home.readFullStory')} <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

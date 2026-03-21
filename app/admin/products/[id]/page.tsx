@@ -324,6 +324,7 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
               <Toggle label="Archived (Soft Deleted)" checked={data.isArchived || false} onChange={v => set('isArchived', v)} />
               <div className="my-2 border-t border-stone-100" />
               <Toggle label="Featured Product" checked={data.isFeatured || false} onChange={v => set('isFeatured', v)} />
+              <Toggle label="Best Seller" checked={data.isBestSeller || false} onChange={v => set('isBestSeller', v)} />
               <Toggle label="Mark as New" checked={data.isNew || false} onChange={v => set('isNew', v)} />
               <Toggle label="Is Product Bundle" checked={data.isBundle || false} onChange={v => set('isBundle', v)} />
             </div>

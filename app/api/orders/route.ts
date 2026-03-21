@@ -14,7 +14,7 @@ export const runtime = 'nodejs';
 
 const OrderSchema = z.object({
   customerName: z.string().min(1, 'Please enter your full name so we know who to deliver to.').max(100),
-  phone: z.string().regex(/^9[78]\d{8}$/, 'Please enter a valid Nepali mobile number (98XXXXXXXX).'),
+  phone: z.string().regex(/^9[78]\d{8}$/, 'Please enter a valid mobile number (98XXXXXXXX).'),
   province: z.string().optional().default('N/A'),
   district: z.string().optional().default('N/A'),
   address: z.string().min(1, 'Kindly provide your delivery address.').max(500),

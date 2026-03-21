@@ -10,7 +10,7 @@ import { z } from 'zod';
 
 const CheckoutFormSchema = z.object({
   customerName: z.string().trim().min(1, 'Please enter your full name so we know who to deliver to.'),
-  phone: z.string().trim().regex(/^9[78]\d{8}$/, 'Please enter a valid Nepali mobile number (98XXXXXXXX).'),
+  phone: z.string().trim().regex(/^9[78]\d{8}$/, 'Please enter a valid mobile number (98XXXXXXXX).'),
   address: z.string().trim().min(1, 'Kindly provide your delivery address.'),
   province: z.string().optional(),
   district: z.string().optional(),
@@ -128,7 +128,7 @@ export default function CheckoutPage() {
 
   const fallbackFieldMessage = (field: CheckoutField): string => {
     if (field === 'customerName') return isNe ? 'कृपया तपाईंको पूरा नाम लेख्नुहोस् ताकि हामी सही व्यक्तिलाई डेलिभरी गर्न सकौं।' : 'Please enter your full name so we know who to deliver to.';
-    if (field === 'phone') return isNe ? 'कृपया मान्य नेपाली मोबाइल नम्बर लेख्नुहोस् (98XXXXXXXX)।' : 'Please enter a valid Nepali mobile number (98XXXXXXXX).';
+    if (field === 'phone') return isNe ? 'कृपया मान्य मोबाइल नम्बर लेख्नुहोस् (98XXXXXXXX)।' : 'Please enter a valid mobile number (98XXXXXXXX).';
     if (field === 'address') return isNe ? 'कृपया डेलिभरी ठेगाना लेख्नुहोस्।' : 'Kindly provide your delivery address.';
     if (field === 'deliveryZone') return isNe ? 'कृपया डेलिभरी स्थान छान्नुहोस्।' : 'Please select your delivery location.';
     return isNe ? 'कृपया यो विवरण जाँच गर्नुहोस्।' : 'Please check this field.';

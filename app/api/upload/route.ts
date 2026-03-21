@@ -81,7 +81,7 @@ export async function POST(req: Request) {
 
     const folder = `luxemoon/${data.context}`;
     const resourceType = data.assetType;
-    const allowedFormats = data.assetType === "image" ? "jpg,jpeg,png,webp" : "mp4";
+    const allowedFormats = data.assetType === "image" ? "jpg,jpeg,png,webp,svg" : "mp4";
     const maxFileSize = data.assetType === "image" ? 10 * 1024 * 1024 : 50 * 1024 * 1024;
 
     const cloudinary = getCloudinary();

@@ -50,7 +50,7 @@ export default function NewProduct() {
     name: '', description: '', priceInside: '', priceOutside: '', originalPrice: '',
     categoryId: '', stock: '0', sku: '', weight: '', dimensions: '',
     discountPercent: '30', discountFixed: '', discountStart: '', discountEnd: '',
-    isFeatured: false, isNew: false, isBundle: false,
+    isFeatured: false, isNew: false, isBestSeller: false, isBundle: false,
     seoTitle: '', seoDescription: '',
     marketingDescription: '', ingredients: '', howToUse: '',
   });
@@ -250,6 +250,7 @@ export default function NewProduct() {
             </button>
             <div className="space-y-4 pt-4 border-t border-stone-100">
               <Toggle label="Featured Product" checked={form.isFeatured} onChange={v => set('isFeatured', v)} />
+              <Toggle label="Best Seller" checked={form.isBestSeller} onChange={v => set('isBestSeller', v)} />
               <Toggle label="Mark as New" checked={form.isNew} onChange={v => set('isNew', v)} />
               <Toggle label="Is Product Bundle" checked={form.isBundle} onChange={v => set('isBundle', v)} />
             </div>

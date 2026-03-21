@@ -1,14 +1,23 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { Loader2, Plus, X, MoveUp, MoveDown, Save, Megaphone, Monitor, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { getHomepageContent, updateHomepageContent } from '../actions';
 import { ImageUpload } from '@/components/admin/ImageUpload';
 
+const RichTextEditor = dynamic(
+    () => import('@/components/RichTextEditor').then((mod) => mod.RichTextEditor),
+    {
+        ssr: false,
+        loading: () => <div className="h-40 rounded-lg border border-stone-200 bg-stone-50 animate-pulse" />,
+    }
+);
+
 interface HeroSlide {
     image: string;
+    mobileImage?: string;
     title: string;
     subtitle: string;
     link: string;
@@ -22,7 +31,6 @@ interface Banner {
 }
 
 export default function HomepageManager() {
-    const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
@@ -30,6 +38,7 @@ export default function HomepageManager() {
     const [banners, setBanners] = useState<Banner[]>([]);
     const [promotionalImages, setPromotionalImages] = useState<string[]>([]);
     const [noticeBar, setNoticeBar] = useState({ text: '', enabled: false });
+    const [heritage, setHeritage] = useState({ subtitle: '', title: '', body: '' });
 
     useEffect(() => {
         fetchContent();
@@ -42,6 +51,11 @@ export default function HomepageManager() {
                 setHeroSlides((data.heroSlides as unknown as HeroSlide[]) || []);
                 setBanners((data.banners as unknown as Banner[]) || []);
                 setPromotionalImages((data.promotionalImages as string[]) || []);
+                setHeritage({
+                    subtitle: (data as any).heritageSubtitle || '',
+                    title: (data as any).heritageTitle || '',
+                    body: (data as any).heritageBody || '',
+                });
                 setNoticeBar({
                     text: data.noticeBarText || '',
                     enabled: data.noticeBarEnabled || false,
@@ -62,6 +76,9 @@ export default function HomepageManager() {
             promotionalImages,
             noticeBarText: noticeBar.text,
             noticeBarEnabled: noticeBar.enabled,
+            heritageSubtitle: heritage.subtitle,
+            heritageTitle: heritage.title,
+            heritageBody: heritage.body,
         });
         if (res.success) {
             toast.success('Homepage updated!');
@@ -72,7 +89,7 @@ export default function HomepageManager() {
     };
 
     // Hero Slide Helpers
-    const addHero = () => setHeroSlides([...heroSlides, { image: '', title: '', subtitle: '', link: '', buttonText: 'Shop Now' }]);
+    const addHero = () => setHeroSlides([...heroSlides, { image: '', mobileImage: '', title: '', subtitle: '', link: '', buttonText: 'Shop Now' }]);
     const removeHero = (i: number) => setHeroSlides(heroSlides.filter((_, idx) => idx !== i));
     const updateHero = (i: number, fields: Partial<HeroSlide>) => {
         const next = [...heroSlides];
@@ -151,6 +168,26 @@ export default function HomepageManager() {
                     </button>
                 </div>
 
+                <div className="bg-amber-50/50 border-2 border-amber-200/50 border-dashed rounded-2xl p-6 relative">
+                    <h3 className="text-sm font-bold text-amber-900 mb-1">Quick Bulk Upload (Create Multiple Slides)</h3>
+                    <p className="text-xs text-amber-700/80 mb-4">Drop multiple images/SVGs here to instantly auto-generate new slides.</p>
+                    <ImageUpload 
+                        images={[]}
+                        onChange={(urls) => {
+                            const newSlides = urls.map(url => ({
+                                image: url,
+                                mobileImage: '',
+                                title: '',
+                                subtitle: '',
+                                link: '',
+                                buttonText: ''
+                            }));
+                            setHeroSlides((prev) => [...prev, ...newSlides]);
+                        }}
+                        maxImages={10}
+                    />
+                </div>
+
                 <div className="grid grid-cols-1 gap-6">
                     {heroSlides.map((slide, i) => (
                         <div key={i} className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm relative group">
@@ -161,9 +198,15 @@ export default function HomepageManager() {
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div>
-                                    <label className="block text-xs font-bold text-stone-400 uppercase mb-2">Slide Image</label>
-                                    <ImageUpload images={slide.image ? [slide.image] : []} onChange={urls => updateHero(i, { image: urls[0] || '' })} maxImages={1} />
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-stone-400 uppercase mb-2">Desktop Image (16:9)</label>
+                                        <ImageUpload images={slide.image ? [slide.image] : []} onChange={urls => updateHero(i, { image: urls[0] || '' })} maxImages={1} />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-stone-400 uppercase mb-2">Mobile Image (4:5 / 9:16)</label>
+                                        <ImageUpload images={slide.mobileImage ? [slide.mobileImage] : []} onChange={urls => updateHero(i, { mobileImage: urls[0] || '' })} maxImages={1} />
+                                    </div>
                                 </div>
                                 <div className="space-y-4">
                                     <div>
@@ -229,6 +272,38 @@ export default function HomepageManager() {
                     {banners.length === 0 && <div className="md:col-span-2 p-12 text-center border-2 border-dashed rounded-2xl text-stone-400">No banners added.</div>}
                 </div>
             </section>
+
+            {/* Heritage Section config */}
+            <Card title="Heritage Section" icon={<Megaphone className="text-amber-600" />}>
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-xs font-bold text-stone-400 uppercase mb-1">Subtitle</label>
+                        <input
+                            placeholder="e.g. OUR HERITAGE"
+                            className="w-full p-2.5 border rounded-lg bg-stone-50"
+                            value={heritage.subtitle}
+                            onChange={e => setHeritage({ ...heritage, subtitle: e.target.value })}
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-stone-400 uppercase mb-1">Title</label>
+                        <input
+                            placeholder="e.g. Honoring the Art of Korean Cosmetics."
+                            className="w-full p-2.5 border rounded-lg bg-stone-50"
+                            value={heritage.title}
+                            onChange={e => setHeritage({ ...heritage, title: e.target.value })}
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-stone-400 uppercase mb-1">Body Text</label>
+                        <RichTextEditor
+                            content={heritage.body}
+                            onChange={(value) => setHeritage({ ...heritage, body: value })}
+                            placeholder="e.g. Luxe Moon brings the sophisticated tradition of Korean beauty..."
+                        />
+                    </div>
+                </div>
+            </Card>
 
             {/* Promotional Images */}
             <section className="space-y-4">

@@ -22,7 +22,7 @@ export default async function DeliveryPolicyPage() {
 
 const defaultDeliveryPolicy = `
 <h2>Delivery Information</h2>
-<p>We deliver across Nepal through our trusted courier partners.</p>
+<p>We deliver across the country through our trusted courier partners.</p>
 
 <h3>Inside Kathmandu Valley</h3>
 <ul>
@@ -37,7 +37,7 @@ const defaultDeliveryPolicy = `
 </ul>
 
 <h3>Cash on Delivery (COD)</h3>
-<p>COD is available for all orders across Nepal. Payment is collected at the time of delivery.</p>
+<p>COD is available for all orders. Payment is collected at the time of delivery.</p>
 
 <h3>Order Tracking</h3>
 <p>Once your order is shipped, you will receive an SMS with tracking details.</p>

@@ -332,6 +332,7 @@ export async function createProduct(data: Record<string, unknown>): Promise<{ su
       discountEnd: data.discountEnd ? new Date(String(data.discountEnd)) : null,
       isFeatured: Boolean(data.isFeatured),
       isNew: Boolean(data.isNew),
+      isBestSeller: Boolean(data.isBestSeller),
       seoTitle: data.seoTitle ? String(data.seoTitle) : null,
       seoDescription: data.seoDescription ? String(data.seoDescription) : null,
       tags: (data.tags as string[]) || [],
@@ -399,6 +400,7 @@ export async function updateProduct(id: string, data: Record<string, unknown>): 
       discountEnd: rest.discountEnd !== undefined ? (rest.discountEnd ? new Date(String(rest.discountEnd)) : null) : undefined,
       isFeatured: rest.isFeatured !== undefined ? Boolean(rest.isFeatured) : undefined,
       isNew: rest.isNew !== undefined ? Boolean(rest.isNew) : undefined,
+      isBestSeller: rest.isBestSeller !== undefined ? Boolean(rest.isBestSeller) : undefined,
       seoTitle: rest.seoTitle !== undefined ? (rest.seoTitle ? String(rest.seoTitle) : null) : undefined,
       seoDescription: rest.seoDescription !== undefined ? (rest.seoDescription ? String(rest.seoDescription) : null) : undefined,
       tags: rest.tags !== undefined ? (rest.tags as string[]) : undefined,
@@ -644,6 +646,9 @@ export async function updateHomepageContent(data: any): Promise<{ success: boole
         promotionalImages: data.promotionalImages || [],
         noticeBarText: data.noticeBarText || null,
         noticeBarEnabled: Boolean(data.noticeBarEnabled),
+        heritageSubtitle: data.heritageSubtitle !== undefined ? data.heritageSubtitle : undefined,
+        heritageTitle: data.heritageTitle !== undefined ? data.heritageTitle : undefined,
+        heritageBody: data.heritageBody !== undefined ? data.heritageBody : undefined,
       }
     });
     invalidateSiteConfig();

@@ -12,7 +12,7 @@ const ContactSchema = z.object({
     name: z.string().min(2, 'Name must be at least 2 characters').max(100, 'Name is too long'),
     email: z.string().email('Invalid email address').optional().or(z.literal('')),
     // Validates Nepali phone numbers (optional +977 prefix, followed by 10 digits starting with 9)
-    phone: z.string().regex(/^(?:\+?977[- \s]?)?(9\d{9})$/, 'Must be a valid Nepali phone number (e.g. 9812345678)'),
+    phone: z.string().regex(/^(?:\+?977[- \s]?)?(9\d{9})$/, 'Must be a valid phone number (e.g. 9812345678)'),
     subject: z.enum(['Order Issue', 'Product Query', 'Collaboration', 'Other'], {
         errorMap: () => ({ message: 'Please select a valid subject' })
     }),

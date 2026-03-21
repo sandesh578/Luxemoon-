@@ -7,8 +7,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ─── ENUMS ────────────────────────────────────────
@@ -75,6 +76,7 @@ model Product {
   discountEnd     DateTime?
   isFeatured      Boolean   @default(false)
   isNew           Boolean   @default(false)
+  isBestSeller    Boolean   @default(false)
   seoTitle        String?
   seoDescription  String?
   tags            String[]
@@ -333,6 +335,11 @@ model HomepageContent {
   promotionalImages Json    @default("[]")
   noticeBarText     String?
   noticeBarEnabled  Boolean @default(false)
+  
+  // Heritage Section Config
+  heritageSubtitle  String? @default("OUR HERITAGE")
+  heritageTitle     String? @default("Honoring the Art of Korean Cosmetics.")
+  heritageBody      String? @db.Text @default("Luxe Moon brings the sophisticated tradition of Korean beauty innovation to you. Our formulas combine ancient botanical wisdom with modern technology, delivering professional salon results in the comfort of your home.")
 }
 
 model NotificationTemplate {

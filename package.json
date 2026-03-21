@@ -4,8 +4,8 @@
     "private": true,
     "scripts": {
         "dev": "next dev",
-        "build": "next build",
-        "start": "next start",
+        "build": "next build && node scripts/prepare-standalone.js",
+        "start": "node .next/standalone/server.js",
         "lint": "next lint",
         "typecheck": "tsc --noEmit",
         "test:unit": "ts-node --compiler-options \"{\\\"module\\\":\\\"CommonJS\\\"}\" tests/review-validation.test.ts",

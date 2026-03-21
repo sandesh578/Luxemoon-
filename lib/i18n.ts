@@ -33,7 +33,7 @@ export const dictionaries = {
       contactUs: "Contact Us",
       allRightsReserved: "All rights reserved.",
       defaultCopy:
-        "Premium Korean-origin haircare. Formulated with Biotin & Keratin to restore your hair's natural brilliance.",
+        "Premium Korean-origin cosmetics. Formulated with high-quality ingredients to restore your natural brilliance.",
     },
     cart: {
       yourBag: "Your Cart",
@@ -67,7 +67,7 @@ export const dictionaries = {
       trustAuthentic: "100% Authentic",
       heritageLabel: "Our Heritage",
       heritageTitleLine1: "Honoring the Art of",
-      heritageTitleLine2: "Korean Haircare.",
+      heritageTitleLine2: "Korean Cosmetics.",
       heritageBody:
         "Luxe Moon brings the sophisticated tradition of Korean beauty innovation to Nepal. Our formulas combine ancient botanical wisdom with modern Nanoplastia technology, delivering professional salon results in the comfort of your home.",
       readFullStory: "About Us",
@@ -78,16 +78,16 @@ export const dictionaries = {
       shop3Step: "Shop 3-Step System",
       featuredTitle: "Featured Collections",
       featuredSubtitle:
-        "Curated essentials for your ultimate hair transformation journey.",
+        "Curated essentials for your ultimate beauty transformation journey.",
       newTitle: "New Arrivals",
-      newSubtitle: "The latest innovations in Korean haircare.",
+      newSubtitle: "The latest innovations in Korean cosmetics.",
       bestTitle: "Best Sellers",
       bestSubtitle: "Our most loved products by the community.",
       viewAll: "View All",
       exploreNow: "Explore Now",
       quickAbsorption: "Quick Absorption",
       quickAbsorptionBody:
-        "Innovative formulas that penetrate deep into the hair shaft for instant results.",
+        "Innovative formulas that penetrate deep for instant, visible results.",
       cleanIngredients: "Clean Ingredients",
       cleanIngredientsBody:
         "Free from harsh sulfates and parabens. Only the goodness of nature.",
@@ -100,12 +100,12 @@ export const dictionaries = {
     shopPage: {
       title: "The Luxe Collection",
       subtitle:
-        "Premium Korean haircare solutions, curated for your specific hair needs.",
+        "Premium Korean cosmetic solutions, curated for your specific beauty needs.",
       featuredTitle: "Featured Collections",
       featuredSubtitle:
-        "Curated essentials for your ultimate hair transformation journey.",
+        "Curated essentials for your ultimate beauty transformation journey.",
       newTitle: "New Arrivals",
-      newSubtitle: "The latest innovations in Korean haircare.",
+      newSubtitle: "The latest innovations in Korean cosmetics.",
       bestTitle: "Best Sellers",
       bestSubtitle: "Our most loved products by the community.",
       allProducts: "All Products",
@@ -117,9 +117,9 @@ export const dictionaries = {
     about: {
       title: "About Us",
       fallbackP1:
-        "Luxe Moon was born from a simple belief: everyone deserves access to world-class haircare, no matter where they are.",
+        "Luxe Moon was born from a simple belief: everyone deserves access to world-class cosmetics, no matter where they are.",
       fallbackP2:
-        "We source the finest Korean haircare formulations, enriched with Biotin, Keratin, and natural botanicals, and bring them directly to Nepal.",
+        "We source the finest Korean cosmetic formulations, enriched with natural botanicals, and bring them directly to you.",
       fallbackP3:
         "Our products are carefully selected for their proven efficacy, premium ingredients, and salon-grade results that you can achieve at home.",
       quote: "Rooted in Korea. Created for the World.",
@@ -128,7 +128,7 @@ export const dictionaries = {
       heroTag: "Contact Luxe Moon",
       heroTitle: "We're here to help you shine.",
       heroBody:
-        "Whether you have a question about our premium hair care line or need assistance with your order, our dedicated team is at your service.",
+        "Whether you have a question about our premium cosmetic line or need assistance with your order, our dedicated team is at your service.",
       messageReceived: "Message Received",
       messageReceivedBody:
         "Thank you for reaching out to Luxe Moon. Our team will review your message and reply shortly.",
@@ -188,7 +188,7 @@ export const dictionaries = {
       contactUs: "हामीलाई सम्पर्क गर्नुहोस्",
       allRightsReserved: "सबै अधिकार सुरक्षित।",
       defaultCopy:
-        "प्रिमियम कोरियन उत्पत्तिको हेयरकेयर। बायोटिन र केराटिनसहित तपाईंको कपालको प्राकृतिक चमक फर्काउन तयार।",
+        "प्रिमियम कोरियन उत्पत्तिको सौन्दर्य प्रसाधन। उच्च गुणस्तरका सामग्रीसहित तपाईंको प्राकृतिक चमक फर्काउन तयार।",
     },
     cart: {
       yourBag: "तपाईंको ब्याग",
@@ -222,7 +222,7 @@ export const dictionaries = {
       trustAuthentic: "१००% वास्तविक",
       heritageLabel: "हाम्रो विरासत",
       heritageTitleLine1: "सम्मान गर्दै",
-      heritageTitleLine2: "कोरियन हेयरकेयर कला",
+      heritageTitleLine2: "कोरियन सौन्दर्य कला",
       heritageBody:
         "Luxe Moon ले कोरियन सौन्दर्य नवप्रवर्तनको परिष्कृत परम्परा नेपालमा ल्याउँछ। हाम्रा फर्मुलामा वनस्पतिको पुरानो ज्ञान र आधुनिक नानो-प्लास्टिया प्रविधिको संयोजन छ।",
       readFullStory: "पूरा कथा पढ्नुहोस्",
@@ -232,16 +232,16 @@ export const dictionaries = {
         "केश झर्ने समस्या, गहिरो मर्मत, र फ्रिज नियन्त्रणका लागि तीन आवश्यक उत्पादन।",
       shop3Step: "३-स्टेप प्रणाली किनमेल गर्नुहोस्",
       featuredTitle: "विशेष संग्रह",
-      featuredSubtitle: "तपाईंको कपाल परिवर्तन यात्राका लागि छनोट गरिएका उत्पादन।",
+      featuredSubtitle: "तपाईंको सौन्दर्य परिवर्तन यात्राका लागि छनोट गरिएका उत्पादन।",
       newTitle: "नयाँ आगमन",
-      newSubtitle: "कोरियन हेयरकेयरका नयाँ नवप्रवर्तनहरू।",
+      newSubtitle: "कोरियन सौन्दर्य प्रसाधनका नयाँ नवप्रवर्तनहरू।",
       bestTitle: "लोकप्रिय उत्पादन",
       bestSubtitle: "समुदायले सबैभन्दा धेरै मन पराएका उत्पादन।",
       viewAll: "सबै हेर्नुहोस्",
       exploreNow: "अहिले हेर्नुहोस्",
       quickAbsorption: "छिटो अवशोषण",
       quickAbsorptionBody:
-        "कपालको भित्री तहसम्म छिटो पुग्ने फर्मुला, तुरुन्तै परिणामका लागि।",
+        "भित्री तहसम्म छिटो पुग्ने फर्मुला, तुरुन्तै देखिने परिणामका लागि।",
       cleanIngredients: "स्वच्छ सामग्री",
       cleanIngredientsBody:
         "कडा सल्फेट र प्याराबेनविहीन, केवल प्राकृतिक गुणहरूको मिश्रण।",
@@ -253,11 +253,11 @@ export const dictionaries = {
     },
     shopPage: {
       title: "Luxe संग्रह",
-      subtitle: "तपाईंको कपालको आवश्यकताअनुसार प्रिमियम कोरियन हेयरकेयर समाधान।",
+      subtitle: "तपाईंको आवश्यकताअनुसार प्रिमियम कोरियन सौन्दर्य समाधान।",
       featuredTitle: "विशेष संग्रह",
-      featuredSubtitle: "तपाईंको कपाल परिवर्तन यात्राका लागि छनोट गरिएका उत्पादन।",
+      featuredSubtitle: "तपाईंको सौन्दर्य परिवर्तन यात्राका लागि छनोट गरिएका उत्पादन।",
       newTitle: "नयाँ आगमन",
-      newSubtitle: "कोरियन हेयरकेयरका नयाँ नवप्रवर्तनहरू।",
+      newSubtitle: "कोरियन सौन्दर्य प्रसाधनका नयाँ नवप्रवर्तनहरू।",
       bestTitle: "लोकप्रिय उत्पादन",
       bestSubtitle: "समुदायले सबैभन्दा धेरै मन पराएका उत्पादन।",
       allProducts: "सबै उत्पादन",
@@ -269,9 +269,9 @@ export const dictionaries = {
     about: {
       title: "हाम्रो कथा",
       fallbackP1:
-        "Luxe Moon एउटा सरल विश्वासबाट सुरु भयो: सबैले विश्वस्तरीय हेयरकेयर पाउनुपर्छ।",
+        "Luxe Moon एउटा सरल विश्वासबाट सुरु भयो: सबैले विश्वस्तरीय सौन्दर्य प्रसाधन पाउनुपर्छ।",
       fallbackP2:
-        "हामी बायोटिन, केराटिन र प्राकृतिक तत्वयुक्त उत्कृष्ट कोरियन फर्मुला नेपालमा ल्याउँछौं।",
+        "हामी उत्कृष्ट कोरियन सौन्दर्य फर्मुलाहरू सिधै तपाईंसम्म ल्याउँछौं।",
       fallbackP3:
         "हाम्रा उत्पादन प्रभावकारी, प्रिमियम र घरमै सैलुन जस्तै परिणाम दिने गरी छनोट गरिएका छन्।",
       quote: "कोरियामा आधारित। विश्वका लागि तयार।",
@@ -280,7 +280,7 @@ export const dictionaries = {
       heroTag: "Luxe Moon सम्पर्क",
       heroTitle: "हामी तपाईंको सहयोगका लागि यहाँ छौं।",
       heroBody:
-        "हाम्रो प्रिमियम हेयरकेयर वा अर्डर सम्बन्धी कुनै प्रश्न भएमा हाम्रो टोली सहयोगका लागि तयार छ।",
+        "हाम्रो प्रिमियम उत्पादन वा अर्डर सम्बन्धी कुनै प्रश्न भएमा हाम्रो टोली सहयोगका लागि तयार छ।",
       messageReceived: "सन्देश प्राप्त भयो",
       messageReceivedBody:
         "सम्पर्क गर्नुभएकोमा धन्यवाद। हाम्रो टोलीले तपाईंको सन्देश छिट्टै हेरी जवाफ दिनेछ।",

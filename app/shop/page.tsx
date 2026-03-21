@@ -15,7 +15,6 @@ export const revalidate = 60;
 
 const getCachedShopData = unstable_cache(
   async (sortParam: string, filterParam: string) => {
-    const config = await getSiteConfig();
     let orderBy: any = [{ isFeatured: 'desc' }, { createdAt: 'desc' }];
     let where: any = { isActive: true, isArchived: false, isDraft: false };
 
@@ -32,22 +31,27 @@ const getCachedShopData = unstable_cache(
       orderBy = { orderItems: { _count: 'desc' } };
     }
 
-    const products = (await prisma.product.findMany({
-      where,
-      select: {
-        id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, isFeatured: true, isNew: true, stock: true,
-        discountPercent: true, discountFixed: true, discountStart: true, discountEnd: true
-      },
-      orderBy,
-    })).map(p => ({
+    const [config, productsRaw, categories] = await Promise.all([
+      getSiteConfig(),
+      prisma.product.findMany({
+        where,
+        select: {
+          id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, isFeatured: true, isNew: true, stock: true,
+          discountPercent: true, discountFixed: true, discountStart: true, discountEnd: true
+        },
+        orderBy,
+      }),
+      prisma.category.findMany({
+        select: { id: true, slug: true, name: true },
+        orderBy: { name: 'asc' },
+      }),
+    ]);
+
+    const products = productsRaw.map(p => ({
         ...p,
         priceInside: calculateDiscountedPrice(Number(p.priceInside), p as any, config as any),
         originalPrice: p.originalPrice ? Number(p.originalPrice) : null,
     }));
-    const categories = await prisma.category.findMany({
-      select: { id: true, slug: true, name: true },
-      orderBy: { name: 'asc' },
-    });
 
     return [products, categories] as const;
   },
@@ -62,15 +66,8 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
   const sortParam = typeof sort === 'string' ? sort : '';
   const filterParam = typeof filter === 'string' ? filter : '';
 
-  let orderBy: any = [{ isFeatured: 'desc' }, { createdAt: 'desc' }];
-  let where: any = { isActive: true, isArchived: false, isDraft: false };
   let pageTitle = t('shopPage.title');
   let pageSubtitle = t('shopPage.subtitle');
-
-  if (sortParam === 'price_asc') orderBy = { priceInside: 'asc' };
-  else if (sortParam === 'price_desc') orderBy = { priceInside: 'desc' };
-  else if (sortParam === 'newest') orderBy = { createdAt: 'desc' };
-  else if (sortParam === 'bestselling') orderBy = { orderItems: { _count: 'desc' } };
 
   if (filterParam === 'featured') {
     pageTitle = t('shopPage.featuredTitle');

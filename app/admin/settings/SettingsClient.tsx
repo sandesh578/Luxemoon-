@@ -101,7 +101,7 @@ export default function SettingsClient({ initialData }: { initialData: Record<st
 
         {tab === 'seo' && (
           <div className="space-y-4">
-            <Field label="Meta Title" value={String(formData.metaTitle || '')} onChange={v => set('metaTitle', v)} placeholder="e.g. Luxe Moon | Premium Korean Haircare in Nepal" />
+            <Field label="Meta Title" value={String(formData.metaTitle || '')} onChange={v => set('metaTitle', v)} placeholder="e.g. Luxe Moon | Premium Korean Haircare" />
             <div>
               <label className="block text-sm font-bold text-stone-600 mb-1">Meta Description</label>
               <textarea className="w-full p-2 border rounded-lg" rows={3} value={String(formData.metaDescription || '')} onChange={e => set('metaDescription', e.target.value)} placeholder="Brief description for search engines..." />
