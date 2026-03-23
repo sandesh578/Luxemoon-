@@ -191,7 +191,7 @@ export default function ContactClient({ config }: { config: ContactConfig }) {
                                                 onChange={handleChange}
                                                 onBlur={(e) => validateField('phone', e.target.value)}
                                                 className={`w-full bg-[#F6EFE7]/50 border-none rounded-2xl px-5 py-4 text-sm focus:ring-2 focus:ring-[#C7782A]/50 transition-all ${errors.phone ? 'ring-2 ring-red-400 bg-red-50' : ''}`}
-                                                placeholder="+977 9800000000"
+                                                placeholder="e.g. +1 234 567 890"
                                             />
                                             {errors.phone && <span className="text-red-500 text-xs font-medium flex items-center gap-1 mt-1"><AlertCircle className="w-3 h-3" />{errors.phone}</span>}
                                         </div>
@@ -283,7 +283,7 @@ export default function ContactClient({ config }: { config: ContactConfig }) {
                         </a>
 
                         <div className="flex flex-col p-6 bg-white rounded-3xl border border-stone-100 shadow-[0_4px_20px_rgb(0,0,0,0.02)] transition-all duration-300 group">
-                            <a href="https://maps.google.com/?q=Luxe+Moon+Durbarmarg" target="_blank" rel="noopener noreferrer" className="flex items-center gap-5 mb-5 cursor-pointer">
+                            <a href={`https://maps.google.com/?q=${encodeURIComponent(config.contactAddress)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-5 mb-5 cursor-pointer">
                                 <div className="w-14 h-14 bg-[#F6EFE7] rounded-full flex items-center justify-center group-hover:bg-[#C7782A] group-hover:text-white transition-colors flex-shrink-0">
                                     <MapPin className="w-6 h-6 text-[#5C3A21] group-hover:text-white transition-colors" />
                                 </div>
@@ -292,19 +292,11 @@ export default function ContactClient({ config }: { config: ContactConfig }) {
                                     <p className="text-sm text-stone-500 font-medium">{config.contactAddress}</p>
                                 </div>
                             </a>
-                            <div className="relative w-full h-40 rounded-2xl overflow-hidden bg-stone-100 border border-stone-200">
-                                <iframe
-                                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3532.227448554228!2d85.3168817!3d27.7099684!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x39eb1907b0522dfb%3A0xc3b9eb227ebd1191!2sDurbar%20Marg%2C%20Kathmandu%2044600!5e0!3m2!1sen!2snp!4v1700000000000!5m2!1sen!2snp"
-                                    width="100%"
-                                    height="100%"
-                                    style={{ border: 0 }}
-                                    allowFullScreen={false}
-                                    loading="lazy"
-                                    referrerPolicy="no-referrer-when-downgrade"
-                                    title="Luxe Moon Office Location"
-                                    className="absolute inset-0 grayscale contrast-125 opacity-80 hover:grayscale-0 hover:opacity-100 transition-all duration-700"
-                                />
-                            </div>
+                            {config.contactAddress && (
+                                <div className="relative w-full h-40 rounded-2xl overflow-hidden bg-stone-100 border border-stone-200 flex items-center justify-center">
+                                    <MapPin className="w-8 h-8 text-amber-600 opacity-20" />
+                                </div>
+                            )}
                         </div>
 
                     </div>

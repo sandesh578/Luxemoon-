@@ -1,181 +1,105 @@
-# LuxeMoon - Production Ecommerce (Next.js + Prisma)
+# LuxeMoon - Premium Haircare Ecommerce (Nepal)
 
-LuxeMoon is a production-focused haircare ecommerce site for Nepal, optimized around a 3-product system:
+LuxeMoon is a production-ready, full-stack ecommerce platform built with **Next.js 15** and **Prisma**, specifically optimized for the high-end haircare market in Nepal. The system features a sophisticated dual-pricing model (Inside/Outside Kathmandu Valley), automated order processing, and a comprehensive administrative control panel.
 
-- Anti-Hair Fall Shampoo (500 ml)
-- Shining Silk Hair Mask (500 ml)
-- Soft & Silky Hair Serum (100 ml)
+## 🚀 Technical Stack
 
-## Core Product Positioning
+- **Framework**: Next.js 15 (App Router)
+- **Language**: TypeScript (Strict Mode)
+- **Database**: PostgreSQL with Prisma ORM
+- **Styling**: Tailwind CSS + Framer Motion (Aesthetics)
+- **Media**: Cloudinary (Image/Video hosting & Optimization)
+- **Communications**: Resend (Email) & Sparrow SMS (Nepal-specific SMS)
+- **Auth**: JWT-based session management with Edge-compatible middleware
 
-Brand line:
-`LuxeMoon Nano Botox 4-in-1 | Biotin + Keratin Nanoplastia`
+## 🛠️ Implemented Functionality
 
-Approved claim set:
-- pH-Balanced Formula
-- Sulfate-Free
-- Paraben-Free
-- Silicone-Free
-- Salon-Level Hair Care
+### 1. Customer-Facing Features
+- **Dynamic Product Catalog**: Optimized for a 3-product system (Shampoo, Mask, Serum) but scalable to infinite products/categories.
+- **Regional Pricing Engine**: Automatically switches pricing based on delivery location (Inside vs. Outside Kathmandu Valley).
+- **Advanced Checkout Flow**: 
+  - Real-time address validation for Nepal (Provinces/Districts).
+  - Cash on Delivery (COD) focus with automated delivery charge calculation.
+  - Coupon/Discount validation with usage limits and restrictions.
+- **UGC & Social Proof**: 
+  - Verified purchase reviews with photo/video support.
+  - "Before & After" transformation gallery linked to specific products.
+- **Multi-Language Support**: Seamless toggle between English and Nepali across the entire site.
+- **Responsive Design**: Mobile-first architecture with interactive elements (Floating WhatsApp, Cart Drawer).
 
-## Stack
+### 2. Admin Dashboard (Security Protected)
+- **Order Management**: Comprehensive lifecycle tracking from PENDING to DELIVERED, including rejection handling and admin notes.
+- **Product Engine**: Full CRUD with SEO controls, marketing descriptions, ingredients list, and FAQ management.
+- **Coupon System**: Advanced logic for percentage/fixed discounts, minimum order amounts, and product-specific restrictions.
+- **Site Configuration**: Real-time updates for delivery fees, banner text, social links, and legal policies (Privacy, Terms, etc.) without redeployment.
+- **Content Management**: Interactive control over homepage hero slides, promotional banners, and notice bars.
+- **Security Logs**: Tracking of login attempts and contact form messages.
 
-- Next.js 15 (App Router)
-- TypeScript (strict)
-- Prisma + PostgreSQL
-- Tailwind CSS
-- Cloudinary (media uploads)
-- Resend + Sparrow SMS (optional notifications)
+## 🔄 Application Flow
 
-## Environment Variables
+### Customer Flow
+1. **Discovery**: Home -> Shop/Category pages with ISR (Incremental Static Regeneration) for performance.
+2. **Engagement**: Product details with deep marketing content, reviews, and transformation proof.
+3. **Cart**: Side-drawer based cart for frictionless browsing.
+4. **Checkout**: Logic-heavy form with Nepal-specific location data and real-time delivery fee calculation.
+5. **Confirmation**: Unique order ID generation and success tracking.
 
-Copy `.env.example` to `.env` and set values.
+### Admin Flow
+1. **Authentication**: Secure login with JWT session stored in cookies, protected by Next.js Middleware.
+2. **Operations**: Dashboard summary of recent orders and messages.
+3. **Control**: Direct management of inventory, media uploads (Cloudinary), and global site settings.
 
-Required:
-- `DATABASE_URL`
-- `JWT_SECRET`
-- `ADMIN_EMAIL`
-- `ADMIN_PASSWORD`
+## 📊 Database Schema (Prisma)
 
-Recommended:
-- `NEXT_PUBLIC_SITE_URL` (example: `https://luxemoon.com.np`)
-- `NEXT_PUBLIC_APP_ENV` (`development` or `production`)
+The database architecture is designed for enterprise-level traceability and marketing flexibility.
 
-Optional integrations:
-- `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`
-- `CLOUDINARY_API_KEY`
-- `CLOUDINARY_API_SECRET`
-- `RESEND_API_KEY`
-- `SPARROW_SMS_TOKEN`
+### Core Tables:
+- `Product`: Stores pricing (dual-mode), stock, SEO data, and rich marketing content.
+- `Category`: Hierarchical organization with soft-delete support.
+- `Order` & `OrderItem`: Detailed transaction logs with idempotency keys and shipping tracking.
+- `Review`: Customer feedback linked to products with verification flags.
+- `Transformation`: Media-heavy "Before/After" records for marketing proof.
+- `Coupon`: Complex discount logic with usage tracking.
+- `SiteConfig`: Singleton-style configuration for global store settings.
+- `HomepageContent`: JSON-based storage for dynamic UI components like sliders and banners.
+- `NotificationLog` & `NotificationTemplate`: System for tracking and managing SMS/Email communications.
+- `ContactMessage`: Inbox for customer inquiries.
+- `BlockedCustomer`: Phone-based fraud/spam prevention.
 
-## Local Development
+## 📈 Architecture Alignment
 
+The project follows a **Modular Monolith** pattern using Next.js App Router:
+- **`app/`**: Handles routing and UI (Server Components by default).
+- **`app/api/`**: RESTful endpoints for client-side operations (Cart validation, Order creation).
+- **`lib/`**: Centralized business logic (Nepal location data, currency formatting, auth, notifications).
+- **`components/`**: Reusable UI units divided into `ui/`, `admin/`, and `products/`.
+- **`prisma/`**: Data modeling and seeding scripts for rapid environment setup.
+
+---
+*Report generated for LuxeMoon Production Environment.*
+
+## Database Sync: Supabase -> Local (One-way)
+
+This project includes a safe one-way sync script that **reads from Supabase** and **refreshes local/on-prem DB**.
+Supabase data is never modified by this flow.
+
+### Prerequisites
+- PostgreSQL client tools installed and in `PATH`:
+  - `pg_dump`
+  - `pg_restore`
+
+### Environment
+Set these in `.env`:
+- `SUPABASE_DATABASE_URL` = production Supabase Postgres URL (source)
+- `LOCAL_DATABASE_URL` = local/on-prem Postgres URL (target)
+  - If `LOCAL_DATABASE_URL` is not set, the script falls back to `DATABASE_URL`
+
+### Run
 ```bash
-npm install
-npx prisma generate
-npx prisma migrate dev
-npm run seed
-npm run dev
+npm run db:sync:from-supabase
 ```
 
-## Seed / Database Sync
-
-Primary brand seed (recommended):
-
-```bash
-npm run seed
-```
-
-Premium content sync script:
-
-```bash
-npm run seed:premium
-```
-
-What seed does:
-- Upserts `nanoplastia-collection` category
-- Upserts 3 core LuxeMoon products and branding copy
-- Updates homepage hero/banner/notice content
-- Upserts site config defaults for Nepal store setup
-
-## Build and Production Run
-
-```bash
-npm run lint
-npm run typecheck
-npm run build
-npm run start
-```
-
-## Deployment Checklist (Sunday Launch)
-
-1. Set all required env vars in hosting platform.
-2. Run `npx prisma migrate deploy` in deployment pipeline.
-3. Run `npm run seed` once against production DB.
-4. Verify `/admin/login` access and rotate default admin password.
-5. Confirm Cloudinary keys if image/video uploads are needed.
-6. Test checkout flow with Kathmandu Valley and Outside Valley addresses.
-7. Test order confirmation email/SMS if enabled.
-8. Verify Lighthouse mobile performance and CLS before go-live.
-
-## Admin-Configurable Areas
-
-From Admin panel:
-- Homepage: hero slides, promo banners, story image, notice bar
-- Products: pricing, stock, SEO, gallery, benefits, FAQs, video
-- Coupons and global discounts
-- Contact/social links (Facebook, Instagram, TikTok, WhatsApp)
-- Delivery charges, free-delivery threshold, ETA
-- Legal/content pages and notification toggles
-
-## Performance Notes Implemented
-
-- Homepage revalidated with ISR (`revalidate = 120`)
-- Cached SiteConfig and notice bar fetches to reduce repeat DB calls
-- Dynamic metadata uses SiteConfig + `NEXT_PUBLIC_SITE_URL`
-- Image optimization path applied for Cloudinary URLs
-- Mobile floating WhatsApp adjusted to avoid CTA overlap
-
-## Media Upload Guide (for best quality and speed)
-
-Product images:
-- Primary ratio: `4:5` (example 1200x1500)
-- Alternate ratio: `1:1` (example 1200x1200)
-- Format: WebP (preferred), JPG fallback
-- Target size: 200-450 KB per image
-
-Homepage hero:
-- Desktop: `16:9` (1920x1080)
-- Mobile-safe crop: keep subject centered in middle 60%
-- Target size: 300-700 KB
-
-Promo banners:
-- Ratio: `16:9` (1200x675 minimum)
-- Target size: 180-350 KB
-
-Before/After transformations:
-- Ratio: `4:5` or `1:1`
-- Keep camera angle and lighting consistent
-
-Short videos:
-- Product reel: `9:16` (1080x1920), 15-30 sec
-- Website landscape: `16:9` (1920x1080), 10-20 sec
-- Format: MP4 (H.264), target 2-8 MB for short clips
-
-## Brand Growth Features to Prioritize Next
-
-1. UGC wall on homepage from customer reviews and before/after media.
-2. Bundle builder (Shampoo + Mask + Serum) with auto discount.
-3. Exit-intent coupon popup for first purchase.
-4. Abandoned checkout WhatsApp recovery flow.
-5. Review request automation (D+7 after delivery).
-6. A/B testing for hero headline and first CTA.
-
-## Marketing and Promotion Ideas
-
-1. 3-step education campaign: "Cleanse, Repair, Protect".
-2. Creator seeding with micro-influencers in Kathmandu, Pokhara, Butwal.
-3. Salon partnership program with QR-linked referral coupons.
-4. Festival campaigns with limited-time bundles and urgency timers.
-5. Weekly short-form reels showing visible texture/shine changes.
-6. Performance ads split by problem statement: hair fall, dryness, frizz.
-
-## Suggested KPI Dashboard
-
-Track weekly:
-- Revenue
-- Conversion rate
-- Add-to-cart rate
-- Checkout completion rate
-- CAC by channel
-- Returning customer rate
-- Average order value
-- Bundle attach rate
-
-## Security and Ops
-
-- Use strong `JWT_SECRET`
-- Rotate admin credentials regularly
-- Restrict database/network access on production
-- Keep image upload keys secret server-side only
-- Back up DB before major product or pricing updates
+### Notes
+- The script performs full local refresh using `pg_restore --clean --if-exists`.
+- Local DB objects are replaced to match Supabase state.
+- Source host is guarded to `*.supabase.co` unless `ALLOW_NON_SUPABASE_SOURCE=true`.

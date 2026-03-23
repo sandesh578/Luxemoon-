@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { OptimizedImage as Image } from '@/components/OptimizedImage';
+import Image from 'next/image';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 
 interface Slide {
@@ -77,33 +77,31 @@ export const HeroSlider = ({ slides }: { slides: Slide[] }) => {
                         {/* Desktop Image */}
                         <Image
                             src={slide.image || "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"}
-                            fill
                             className={`object-cover object-center ${slide.mobileImage ? 'hidden md:block' : ''}`}
                             alt={slide.title}
-                            sizes="100vw"
+                            fill
                             priority={index === 0}
-                            loading={index === 0 ? 'eager' : 'lazy'}
+                            sizes="100vw"
                         />
                         {/* Mobile Image */}
                         {slide.mobileImage && (
                             <Image
                                 src={slide.mobileImage}
-                                fill
                                 className="object-cover object-center block md:hidden"
                                 alt={slide.title}
-                                sizes="100vw"
+                                fill
                                 priority={index === 0}
-                                loading={index === 0 ? 'eager' : 'lazy'}
+                                sizes="100vw"
                             />
                         )}
                         
                         {/* Overlay Gradient - Refined to be subtle */}
-                        <div className="absolute inset-0 bg-black/10 transition-opacity duration-300 pointer-events-none" />
-                        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/60 via-black/20 to-transparent pointer-events-none" />
+                        <div className="absolute inset-0 bg-black/15 transition-opacity duration-300 pointer-events-none" />
+                        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/65 via-black/25 to-transparent pointer-events-none" />
 
                         <div className="absolute inset-0 flex items-center justify-center text-center px-6 md:px-12">
                             <div className={`max-w-4xl space-y-5 md:space-y-8 transition-all duration-700 w-full`}>
-                                <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl text-white leading-[1.15] drop-shadow-lg">
+                                <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl text-white leading-[1.08] drop-shadow-lg tracking-tight">
                                     {slide.title}
                                 </h2>
                                 <p className="text-white/90 text-sm sm:text-base md:text-lg lg:text-xl font-light tracking-wide max-w-2xl mx-auto leading-relaxed drop-shadow-md">
@@ -112,7 +110,7 @@ export const HeroSlider = ({ slides }: { slides: Slide[] }) => {
                                 <div className="pt-4 md:pt-8 flex justify-center w-full">
                                     <Link
                                         href={slide.link || '/shop'}
-                                        className="inline-flex items-center justify-center gap-3 group px-8 py-3.5 md:px-10 md:py-4 bg-white text-stone-900 font-bold rounded-full hover:bg-stone-100 hover:scale-105 transition-all shadow-xl text-sm md:text-base active:scale-95"
+                                        className="inline-flex items-center justify-center gap-3 group px-8 py-3.5 md:px-10 md:py-4 bg-white text-stone-900 font-bold rounded-full hover:bg-stone-100 hover:scale-105 transition-all shadow-xl text-sm md:text-base active:scale-95 border border-white/80"
                                     >
                                         {slide.buttonText || 'SHOP NOW'}
                                         <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

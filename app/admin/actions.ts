@@ -647,6 +647,7 @@ export async function updateHomepageContent(data: any): Promise<{ success: boole
         noticeBarText: data.noticeBarText || null,
         noticeBarEnabled: Boolean(data.noticeBarEnabled),
         heritageSubtitle: data.heritageSubtitle !== undefined ? data.heritageSubtitle : undefined,
+
         heritageTitle: data.heritageTitle !== undefined ? data.heritageTitle : undefined,
         heritageBody: data.heritageBody !== undefined ? data.heritageBody : undefined,
         communityReviews: data.communityReviews || [],

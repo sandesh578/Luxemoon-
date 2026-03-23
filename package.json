@@ -10,8 +10,10 @@
         "typecheck": "tsc --noEmit",
         "test:unit": "ts-node --compiler-options \"{\\\"module\\\":\\\"CommonJS\\\"}\" tests/review-validation.test.ts",
         "test:smoke": "node -e \"const assert=require('node:assert/strict'); const base=process.env.TEST_BASE_URL||'http://127.0.0.1:3000'; const expectStatus=async(path,status)=>{ const res=await fetch(base+path,{redirect:'manual',headers:{'cache-control':'no-cache'}}); assert.equal(res.status,status,`${path} returned ${res.status} instead of ${status}`); return res; }; (async()=>{ const home=await expectStatus('/',200); const homeHtml=await home.text(); assert.equal(homeHtml.includes('Luxe Moon'),true,'home page did not render expected brand text'); await expectStatus('/shop',200); await expectStatus('/about',200); await expectStatus('/api/settings',200); await expectStatus('/api/products',200); await expectStatus('/api/categories',200); const badContact=await fetch(base+'/api/contact',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({})}); assert.equal(badContact.status,400,`/api/contact returned ${badContact.status} instead of 400`); const badOrder=await fetch(base+'/api/orders',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({})}); assert.equal(badOrder.status,400,`/api/orders returned ${badOrder.status} instead of 400`); console.log(`smoke integration checks passed against ${base}`); })().catch(err=>{ console.error(err); process.exit(1); });\"",
+        "test:auth-flow": "node tests/auth-flow.smoke.js",
         "seed": "ts-node --compiler-options \"{\\\"module\\\":\\\"CommonJS\\\"}\" prisma/seed.ts",
         "seed:premium": "ts-node --compiler-options \"{\\\"module\\\":\\\"CommonJS\\\"}\" scripts/seed-premium.ts",
+        "db:sync:from-supabase": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/sync-supabase-to-local.ps1",
         "test": "npm run test:unit",
         "postinstall": "prisma generate"
     },
@@ -24,7 +26,9 @@
         "@tiptap/extension-link": "^3.20.0",
         "@tiptap/react": "^3.20.0",
         "@tiptap/starter-kit": "^3.20.0",
+        "bcryptjs": "^3.0.3",
         "cloudinary": "^2.9.0",
+        "framer-motion": "^12.38.0",
         "isomorphic-dompurify": "^3.0.0",
         "jose": "^5.2.0",
         "lucide-react": "^0.575.0",
@@ -39,6 +43,7 @@
         "zod": "^3.22.4"
     },
     "devDependencies": {
+        "@types/bcryptjs": "^2.4.6",
         "@types/node": "^20.11.16",
         "@types/react": "^19.0.0",
         "@types/react-dom": "^19.0.0",

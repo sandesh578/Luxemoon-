@@ -92,7 +92,7 @@ export const Footer = () => {
         </div>
       </div>
       <div className="max-w-7xl mx-auto mt-16 pt-8 border-t border-stone-800 text-center text-xs text-stone-500">
-        &copy; {new Date().getFullYear()} {config.storeName} Nepal. {t('footer.allRightsReserved')}
+        &copy; {new Date().getFullYear()} {config.storeName}. {t('footer.allRightsReserved')}
       </div>
     </footer>
   );

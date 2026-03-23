@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LogOut, LayoutDashboard, ShoppingBag, Settings, UserX, MessageSquare, Grid, Home, Menu, X, Shield, ShoppingCart, Mail } from 'lucide-react';
+import { LogOut, LayoutDashboard, ShoppingBag, Settings, UserX, Users, MessageSquare, Grid, Home, Menu, X, Shield, ShoppingCart, Mail } from 'lucide-react';
 import { Toaster } from 'sonner';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -25,6 +25,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <NavItem href="/admin/messages" icon={<Mail />} label="Messages" onClick={() => setMobileMenuOpen(false)} pathname={pathname} />
       <NavItem href="/admin/transformations" icon={<Shield />} label="Results" onClick={() => setMobileMenuOpen(false)} pathname={pathname} />
       <NavItem href="/admin/customers" icon={<UserX />} label="Blacklist" onClick={() => setMobileMenuOpen(false)} pathname={pathname} />
+      <NavItem href="/admin/users" icon={<Users />} label="Users" onClick={() => setMobileMenuOpen(false)} pathname={pathname} />
       <NavItem href="/admin/homepage" icon={<Home />} label="Homepage" onClick={() => setMobileMenuOpen(false)} pathname={pathname} />
       <NavItem href="/admin/settings" icon={<Settings />} label="Settings" onClick={() => setMobileMenuOpen(false)} pathname={pathname} />
     </>

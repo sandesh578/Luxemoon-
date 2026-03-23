@@ -5,28 +5,55 @@ import { decrypt } from './lib/auth-edge';
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Admin Auth Check — skip login page
-  if (pathname === '/admin/login') {
-    return NextResponse.next();
+  // ─── ADMIN AUTH ──────────────────────────────
+  if (pathname.startsWith('/admin')) {
+    // Skip login page
+    if (pathname === '/admin/login') {
+      return NextResponse.next();
+    }
+
+    const cookie = request.cookies.get('session')?.value;
+
+    if (!cookie) {
+      return NextResponse.redirect(new URL('/admin/login', request.url));
+    }
+
+    try {
+      await decrypt(cookie);
+      return NextResponse.next();
+    } catch {
+      const loginUrl = new URL('/admin/login', request.url);
+      const redirectResponse = NextResponse.redirect(loginUrl);
+      redirectResponse.cookies.delete('session');
+      return redirectResponse;
+    }
   }
 
-  const cookie = request.cookies.get('session')?.value;
+  // ─── USER AUTH (account pages) ───────────────
+  if (pathname.startsWith('/account')) {
+    const cookie = request.cookies.get('user-session')?.value;
 
-  if (!cookie) {
-    return NextResponse.redirect(new URL('/admin/login', request.url));
+    if (!cookie) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+
+    try {
+      const payload = await decrypt(cookie);
+      if (payload.role !== 'user') {
+        throw new Error('Invalid role');
+      }
+      return NextResponse.next();
+    } catch {
+      const loginUrl = new URL('/login', request.url);
+      const redirectResponse = NextResponse.redirect(loginUrl);
+      redirectResponse.cookies.delete('user-session');
+      return redirectResponse;
+    }
   }
 
-  try {
-    await decrypt(cookie);
-    return NextResponse.next();
-  } catch {
-    const loginUrl = new URL('/admin/login', request.url);
-    const redirectResponse = NextResponse.redirect(loginUrl);
-    redirectResponse.cookies.delete('session');
-    return redirectResponse;
-  }
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: ['/admin/:path*', '/account/:path*'],
 };

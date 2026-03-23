@@ -116,6 +116,46 @@ model Product {
   @@index([name])
 }
 
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  phone     String?
+  password  String   // bcrypt hash
+  adminNote String?  @db.Text
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  addresses Address[]
+  orders    Order[]
+
+  @@index([email])
+  @@index([phone])
+  @@index([createdAt])
+}
+
+model Address {
+  id        String   @id @default(cuid())
+  userId    String
+  fullName  String
+  phone     String
+  province  String
+  district  String
+  city      String
+  address   String
+  landmark  String?
+  isDefault Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
 model Order {
   id              String      @id @default(cuid())
   customerName    String
@@ -132,6 +172,10 @@ model Order {
   rejectionReason String?
   ipAddress       String?
   idempotencyKey  String?     @unique
+
+  // User link (optional — guest orders have no userId)
+  userId          String?
+  user            User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   // Payment & Admin
   paymentReceived Boolean @default(false)
@@ -159,6 +203,7 @@ model Order {
   @@index([couponId])
   @@index([status, createdAt])
   @@index([customerName])
+  @@index([userId])
 }
 
 model OrderItem {

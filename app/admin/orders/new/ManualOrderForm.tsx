@@ -149,8 +149,8 @@ export default function ManualOrderForm({ products }: { products: ProductMin[] }
                         >
                             <Truck className={`w-5 h-5 mt-0.5 ${isInsideValley ? 'text-amber-600' : 'text-stone-400'}`} />
                             <div>
-                                <div className="font-bold text-stone-900">Inside Valley</div>
-                                <div className="text-sm text-stone-500">Kathmandu, Bhaktapur, Lalitpur</div>
+                                <div className="font-bold text-stone-900">Major Cities</div>
+                                <div className="text-sm text-stone-500">Standard urban delivery</div>
                             </div>
                         </button>
                         <button
@@ -161,8 +161,8 @@ export default function ManualOrderForm({ products }: { products: ProductMin[] }
                         >
                             <Navigation2 className={`w-5 h-5 mt-0.5 ${!isInsideValley ? 'text-amber-600' : 'text-stone-400'}`} />
                             <div>
-                                <div className="font-bold text-stone-900">Outside Valley</div>
-                                <div className="text-sm text-stone-500">Other districts in Nepal</div>
+                                <div className="font-bold text-stone-900">Other Regions</div>
+                                <div className="text-sm text-stone-500">Standard nationwide delivery</div>
                             </div>
                         </button>
                     </div>

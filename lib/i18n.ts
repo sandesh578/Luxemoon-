@@ -24,7 +24,7 @@ export const dictionaries = {
       support: "Support",
       contact: "Contact",
       allProducts: "All Products",
-      nanoplastiaKits: "Nanoplastia Kits",
+      nanoplastiaKits: "Complete Kits",
       ourStory: "About Us",
       deliveryPolicy: "Delivery Policy",
       refundPolicy: "Refund Policy",
@@ -69,12 +69,12 @@ export const dictionaries = {
       heritageTitleLine1: "Honoring the Art of",
       heritageTitleLine2: "Korean Cosmetics.",
       heritageBody:
-        "Luxe Moon brings the sophisticated tradition of Korean beauty innovation to Nepal. Our formulas combine ancient botanical wisdom with modern Nanoplastia technology, delivering professional salon results in the comfort of your home.",
+        "Luxe Moon brings the sophisticated tradition of Korean beauty innovation to the world. Our formulas combine ancient botanical wisdom with modern technology, delivering professional results in the comfort of your home.",
       readFullStory: "About Us",
-      nanoLabel: "The Glass Hair Revolution",
+      nanoLabel: "The Glass Glow Revolution",
       nanoTitle: "Nano Botox Biotin + Keratin 4-in-1",
       nanoSubtitle:
-        "Three essentials for anti-hair fall care, deep repair, and frizz control.",
+        "Three essentials for complete care, deep repair, and frizz control.",
       shop3Step: "Shop 3-Step System",
       featuredTitle: "Featured Collections",
       featuredSubtitle:
@@ -224,12 +224,12 @@ export const dictionaries = {
       heritageTitleLine1: "सम्मान गर्दै",
       heritageTitleLine2: "कोरियन सौन्दर्य कला",
       heritageBody:
-        "Luxe Moon ले कोरियन सौन्दर्य नवप्रवर्तनको परिष्कृत परम्परा नेपालमा ल्याउँछ। हाम्रा फर्मुलामा वनस्पतिको पुरानो ज्ञान र आधुनिक नानो-प्लास्टिया प्रविधिको संयोजन छ।",
+        "Luxe Moon ले कोरियन सौन्दर्य नवप्रवर्तनको परिष्कृत परम्परा विश्वभर ल्याउँछ। हाम्रा फर्मुलामा वनस्पतिको पुरानो ज्ञान र आधुनिक प्रविधिको संयोजन छ।",
       readFullStory: "पूरा कथा पढ्नुहोस्",
-      nanoLabel: "ग्लास हेयर क्रान्ति",
+      nanoLabel: "ग्लास ग्लो क्रान्ति",
       nanoTitle: "नानो बोटक्स बायोटिन + केराटिन 4-in-1",
       nanoSubtitle:
-        "केश झर्ने समस्या, गहिरो मर्मत, र फ्रिज नियन्त्रणका लागि तीन आवश्यक उत्पादन।",
+        "गहिरो मर्मत, र चमकका लागि तीन आवश्यक उत्पादन।",
       shop3Step: "३-स्टेप प्रणाली किनमेल गर्नुहोस्",
       featuredTitle: "विशेष संग्रह",
       featuredSubtitle: "तपाईंको सौन्दर्य परिवर्तन यात्राका लागि छनोट गरिएका उत्पादन।",
@@ -339,3 +339,4 @@ export function translate(locale: Locale, key: string, vars?: Record<string, str
     raw
   );
 }
+

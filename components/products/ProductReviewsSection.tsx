@@ -316,7 +316,7 @@ export default function ProductReviewsSection({ productId, reviews = [] }: Props
                         <span className="text-sm font-bold text-stone-900">{review.userName}</span>
                         {review.isVerified && <CheckCircle2 className="h-3.5 w-3.5 text-blue-500" />}
                       </div>
-                      <span className="text-[10px] font-medium text-stone-400">{review.address || 'Nepal'}</span>
+                      <span className="text-[10px] font-medium text-stone-400">{review.address || 'Verified Customer'}</span>
                     </div>
                   </div>
                   <div className="flex gap-0.5 text-[10px] text-amber-400">
@@ -454,7 +454,7 @@ export default function ProductReviewsSection({ productId, reviews = [] }: Props
               </div>
               <div className="space-y-1.5">
                 <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-400">Location</label>
-                <input maxLength={100} value={reviewForm.address} onChange={(event) => setReviewForm((previous) => ({ ...previous, address: event.target.value }))} className="w-full rounded-xl bg-stone-50 px-4 py-3 text-sm transition-all focus:ring-2 focus:ring-amber-200 border-none" placeholder="e.g. Kathmandu, Nepal" />
+                <input maxLength={100} value={reviewForm.address} onChange={(event) => setReviewForm((previous) => ({ ...previous, address: event.target.value }))} className="w-full rounded-xl bg-stone-50 px-4 py-3 text-sm transition-all focus:ring-2 focus:ring-amber-200 border-none" placeholder="e.g. New York, USA" />
               </div>
             </div>
 

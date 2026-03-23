@@ -16,10 +16,14 @@ if (!secretKey) {
 const key = new TextEncoder().encode(secretKey);
 
 export async function encrypt(payload: Record<string, unknown>) {
+    return encryptWithExpiration(payload, "24h");
+}
+
+export async function encryptWithExpiration(payload: Record<string, unknown>, expiration: string) {
     return await new SignJWT(payload)
         .setProtectedHeader({ alg: "HS256" })
         .setIssuedAt()
-        .setExpirationTime("24h")
+        .setExpirationTime(expiration)
         .sign(key);
 }
 

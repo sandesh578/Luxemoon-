@@ -32,7 +32,7 @@ export function FloatingWhatsApp() {
             href={cleanWhatsAppUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="fixed bottom-24 md:bottom-6 right-4 md:right-6 z-50 flex items-center justify-center w-14 h-14 bg-[#25D366] text-white rounded-full shadow-2xl hover:scale-110 transition-transform duration-300 animate-bounce group"
+            className="fixed bottom-24 md:bottom-6 right-4 md:right-6 z-30 flex items-center justify-center w-14 h-14 bg-[#25D366] text-white rounded-full shadow-2xl hover:scale-110 transition-transform duration-300 animate-bounce group"
             aria-label={t('whatsapp.chatAriaLabel')}
         >
             <MessageCircle className="w-7 h-7" />

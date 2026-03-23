@@ -9,6 +9,7 @@ import { calculateDiscountedPrice } from '@/lib/settings';
 import { getSiteConfig } from '@/lib/settings-server';
 import { NEPAL_PROVINCES, isValidProvinceDistrict } from '@/lib/nepal-data';
 import { decimalToNumber, decimalToNumberOrNull } from '@/lib/decimal';
+import { getUserSession } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 
@@ -51,6 +52,9 @@ export async function POST(req: Request) {
     }
 
     const data = OrderSchema.parse(body);
+
+    // Check if user is logged in (optional — guest checkout still works)
+    const userSession = await getUserSession().catch(() => null);
 
     // Honeypot check for bots
     if (data.website) {
@@ -245,7 +249,8 @@ export async function POST(req: Request) {
           couponDiscount: couponDiscountAmount > 0 ? couponDiscountAmount : null,
           items: {
             create: orderItemsData
-          }
+          },
+          userId: userSession?.userId || null,
         },
         include: { items: true }
       });

@@ -24,16 +24,16 @@ const defaultDeliveryPolicy = `
 <h2>Delivery Information</h2>
 <p>We deliver across the country through our trusted courier partners.</p>
 
-<h3>Inside Kathmandu Valley</h3>
+<h3>Standard Delivery (Major Cities)</h3>
 <ul>
-  <li><strong>Estimated Delivery:</strong> 1-2 business days</li>
-  <li><strong>Delivery Charge:</strong> Free on orders above NPR 5,000</li>
+  <li><strong>Estimated Delivery:</strong> 1-3 business days</li>
+  <li><strong>Delivery Charge:</strong> Free on orders above a certain threshold</li>
 </ul>
 
-<h3>Outside Kathmandu Valley</h3>
+<h3>Outside Major Cities</h3>
 <ul>
-  <li><strong>Estimated Delivery:</strong> 3-5 business days</li>
-  <li><strong>Delivery Charge:</strong> NPR 150 (Free on orders above NPR 5,000)</li>
+  <li><strong>Estimated Delivery:</strong> 3-7 business days</li>
+  <li><strong>Delivery Charge:</strong> Standard rates apply (Free on qualifying orders)</li>
 </ul>
 
 <h3>Cash on Delivery (COD)</h3>

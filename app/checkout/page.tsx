@@ -10,7 +10,7 @@ import { z } from 'zod';
 
 const CheckoutFormSchema = z.object({
   customerName: z.string().trim().min(1, 'Please enter your full name so we know who to deliver to.'),
-  phone: z.string().trim().regex(/^9[78]\d{8}$/, 'Please enter a valid mobile number (98XXXXXXXX).'),
+  phone: z.string().trim().regex(/^9[78]\d{8}$/, 'Please enter a valid mobile number.'),
   address: z.string().trim().min(1, 'Kindly provide your delivery address.'),
   province: z.string().optional(),
   district: z.string().optional(),
@@ -41,18 +41,18 @@ export default function CheckoutPage() {
     phonePlaceholder: '98XXXXXXXX',
     emailPlaceholder: isNe ? 'तपाईंको इमेल' : 'your@email.com',
     deliveryAddress: isNe ? 'डेलिभरी ठेगाना' : 'Delivery Address',
-    insideValley: isNe ? 'भ्याली भित्र' : 'Inside Valley',
-    outsideValley: isNe ? 'भ्याली बाहिर' : 'Outside Valley',
+    insideValley: isNe ? 'प्रमुख शहर' : 'Major Cities',
+    outsideValley: isNe ? 'अन्य क्षेत्र' : 'Other Regions',
     insideDesc: isNe ? 'छिटो शहर डेलिभरी' : 'Fast city delivery with priority routing.',
     outsideDesc: isNe ? 'देशभरि डेलिभरी सेवा' : 'Nationwide delivery with trusted courier partners.',
-    province: isNe ? 'प्रदेश' : 'Province',
-    district: isNe ? 'जिल्ला' : 'District',
+    province: isNe ? 'प्रदेश / राज्य' : 'Province / State',
+    district: isNe ? 'जिल्ला / शहर' : 'District / City',
     selectProvince: isNe ? 'प्रदेश छान्नुहोस्' : 'Select Province',
     selectDistrict: isNe ? 'जिल्ला छान्नुहोस्' : 'Select District',
     selectProvinceFirst: isNe ? 'पहिले प्रदेश छान्नुहोस्' : 'Select province first',
     fullAddress: isNe ? 'पूरा ठेगाना' : 'Full Address',
     addressPlaceholder: isNe ? 'टोल, घर नम्बर, क्षेत्र' : 'Street, house number, area',
-    addressHint: isNe ? 'क्षेत्र टाइप गर्न सुरु गर्नुहोस् (जस्तै: काठमाडौं, ललितपुर, पोखरा)' : 'Start typing your area (e.g., Kathmandu, Lalitpur, Pokhara)',
+    addressHint: isNe ? 'क्षेत्र टाइप गर्न सुरु गर्नुहोस्' : 'Start typing your area',
     locationSaved: isNe ? 'यो ठेगानाको लोकेशन सुरक्षित गरियो।' : 'Location pin saved for this address.',
     landmark: isNe ? 'ल्यान्डमार्क' : 'Landmark',
     notes: isNe ? 'अर्डर नोट' : 'Order Notes',
@@ -79,8 +79,8 @@ export default function CheckoutPage() {
     termsNote: isNe ? 'अर्डर राखेर तपाईंले हाम्रो नियम तथा सर्तहरू स्वीकार गर्नुहुन्छ।' : 'By placing your order, you agree to our terms & conditions',
     emptyBag: isNe ? 'तपाईंको ब्याग खाली छ' : 'Your cart is empty',
     continueShopping: isNe ? 'किनमेल जारी राख्नुहोस्' : 'Continue Shopping',
-    valleyText: isNe ? 'भ्याली भित्र' : 'Kathmandu Valley',
-    outsideText: isNe ? 'भ्याली बाहिर' : 'Outside Valley',
+    valleyText: isNe ? 'प्रमुख शहर' : 'Major Cities',
+    outsideText: isNe ? 'अन्य क्षेत्र' : 'Other Regions',
     couldntFetchAddress: isNe ? 'अहिले सुझाव ल्याउन सकेनौं। कृपया ठेगाना हातैले लेख्नुहोस्।' : 'We couldnt fetch suggestions right now. Please enter your address manually.',
   } as const;
 
@@ -98,6 +98,43 @@ export default function CheckoutPage() {
   const [deliveryZone, setDeliveryZone] = useState<'inside' | 'outside' | ''>('');
 
   const districts = useMemo(() => getDistrictsForProvince(form.province), [form.province]);
+
+  // Auto-fill from user's default address (if logged in)
+  useEffect(() => {
+    (async () => {
+      try {
+        const [addrRes, profileRes] = await Promise.all([
+          fetch('/api/user/addresses'),
+          fetch('/api/user/profile'),
+        ]);
+        if (!addrRes.ok || !profileRes.ok) return;
+        const addresses = await addrRes.json();
+        const profile = await profileRes.json();
+        const defaultAddr = addresses.find((a: any) => a.isDefault) || addresses[0];
+        if (defaultAddr) {
+          setForm(prev => ({
+            ...prev,
+            customerName: defaultAddr.fullName || prev.customerName,
+            phone: defaultAddr.phone || prev.phone,
+            email: profile.email || prev.email,
+            province: defaultAddr.province || prev.province,
+            district: defaultAddr.district || prev.district,
+            address: defaultAddr.address || prev.address,
+            landmark: defaultAddr.landmark || prev.landmark,
+          }));
+        } else if (profile) {
+          setForm(prev => ({
+            ...prev,
+            customerName: profile.name || prev.customerName,
+            phone: profile.phone || prev.phone,
+            email: profile.email || prev.email,
+          }));
+        }
+      } catch {
+        // Not logged in — guest checkout continues
+      }
+    })();
+  }, []);
 
   // Auto-detect valley when district changes
   useEffect(() => {

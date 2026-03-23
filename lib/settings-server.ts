@@ -120,11 +120,13 @@ async function _getHomepageNotice() {
     return {
       noticeBarText: homepage?.noticeBarText ?? null,
       noticeBarEnabled: homepage?.noticeBarEnabled ?? false,
+      noticeBarStill: false,
     };
   } catch {
     return {
       noticeBarText: null,
       noticeBarEnabled: false,
+      noticeBarStill: false,
     };
   }
 }

@@ -9,8 +9,8 @@ import { OptimizedImage as Image } from '@/components/OptimizedImage';
 import { optimizeImage } from '@/lib/image';
 import { formatCurrency } from '@/lib/currency';
 import { toast } from 'sonner';
-import { QuickAddButton } from '@/components/QuickAddButton';
 
+const QuickAddButton = dynamic(() => import('@/components/QuickAddButton').then(mod => mod.QuickAddButton), { ssr: false });
 const ProductReviewsSection = dynamic(() => import('@/components/products/ProductReviewsSection'));
 
 interface Review {

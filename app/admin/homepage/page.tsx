@@ -6,6 +6,7 @@ import { Loader2, Plus, X, MoveUp, MoveDown, Save, Megaphone, Monitor, Image as 
 import { toast } from 'sonner';
 import { getHomepageContent, updateHomepageContent, getProductsForDropdown } from '../actions';
 import { ImageUpload } from '@/components/admin/ImageUpload';
+import { VideoUpload } from '@/components/admin/VideoUpload';
 
 const RichTextEditor = dynamic(
     () => import('@/components/RichTextEditor').then((mod) => mod.RichTextEditor),
@@ -45,7 +46,7 @@ export default function HomepageManager() {
     const [promotionalImages, setPromotionalImages] = useState<string[]>([]);
     const [communityReviews, setCommunityReviews] = useState<CommunityReview[]>([]);
     const [products, setProducts] = useState<{id: string, name: string, image: string}[]>([]);
-    const [noticeBar, setNoticeBar] = useState({ text: '', enabled: false });
+    const [noticeBar, setNoticeBar] = useState({ text: '', enabled: false, still: false });
     const [heritage, setHeritage] = useState({ subtitle: '', title: '', body: '' });
 
     useEffect(() => {
@@ -69,6 +70,7 @@ export default function HomepageManager() {
                 setNoticeBar({
                     text: data.noticeBarText || '',
                     enabled: data.noticeBarEnabled || false,
+                    still: (data as any).noticeBarStill || false,
                 });
             }
         } catch (e) {
@@ -86,6 +88,7 @@ export default function HomepageManager() {
             promotionalImages,
             noticeBarText: noticeBar.text,
             noticeBarEnabled: noticeBar.enabled,
+            noticeBarStill: noticeBar.still,
             heritageSubtitle: heritage.subtitle,
             heritageTitle: heritage.title,
             heritageBody: heritage.body,
@@ -145,23 +148,43 @@ export default function HomepageManager() {
 
             {/* Notice Bar */}
             <Card title="Notice Bar" icon={<Megaphone className="text-amber-600" />}>
-                <div className="flex items-center gap-4 mb-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
+                <div className="flex flex-wrap items-center gap-6 mb-6">
+                    <label className="flex items-center gap-3 cursor-pointer group">
+                        <div className={`w-10 h-5 rounded-full p-0.5 transition-colors ${noticeBar.enabled ? 'bg-amber-500' : 'bg-stone-300'}`}>
+                            <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform ${noticeBar.enabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                        </div>
                         <input
                             type="checkbox"
+                            className="hidden"
                             checked={noticeBar.enabled}
                             onChange={e => setNoticeBar({ ...noticeBar, enabled: e.target.checked })}
-                            className="rounded text-amber-600"
                         />
                         <span className="font-bold text-stone-700">Enable Notice Bar</span>
                     </label>
+
+                    <label className="flex items-center gap-3 cursor-pointer group">
+                        <div className={`w-10 h-5 rounded-full p-0.5 transition-colors ${noticeBar.still ? 'bg-amber-500' : 'bg-stone-300'}`}>
+                            <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform ${noticeBar.still ? 'translate-x-5' : 'translate-x-0'}`} />
+                        </div>
+                        <input
+                            type="checkbox"
+                            className="hidden"
+                            checked={noticeBar.still}
+                            onChange={e => setNoticeBar({ ...noticeBar, still: e.target.checked })}
+                        />
+                        <span className="font-bold text-stone-700">Stationary (No Animation)</span>
+                    </label>
                 </div>
-                <input
-                    placeholder="Enter notice text (e.g. Free Delivery on orders above NPR 5000!)"
-                    className="w-full p-2.5 border rounded-lg bg-stone-50"
-                    value={noticeBar.text}
-                    onChange={e => setNoticeBar({ ...noticeBar, text: e.target.value })}
-                />
+                
+                <div className="space-y-2">
+                    <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest ml-1">Notice Content</label>
+                    <input
+                        placeholder="e.g. Free Delivery on orders above $50!"
+                        className="w-full p-3.5 border border-stone-100 rounded-2xl bg-stone-50/50 focus:bg-white focus:ring-2 focus:ring-amber-200/50 transition-all font-medium text-stone-900"
+                        value={noticeBar.text}
+                        onChange={e => setNoticeBar({ ...noticeBar, text: e.target.value })}
+                    />
+                </div>
             </Card>
 
             {/* Hero Slides */}
@@ -333,15 +356,26 @@ export default function HomepageManager() {
                                     </label>
                                 </div>
 
-                                <ImageUpload 
-                                    images={review.mediaUrl ? [review.mediaUrl] : []} 
-                                    onChange={urls => {
-                                        const next = [...communityReviews];
-                                        next[i].mediaUrl = urls[0] || '';
-                                        setCommunityReviews(next);
-                                    }} 
-                                    maxImages={1} 
-                                />
+                                {review.mediaType === 'video' ? (
+                                    <VideoUpload
+                                        videoUrl={review.mediaUrl || ''}
+                                        onChange={(url) => {
+                                            const next = [...communityReviews];
+                                            next[i].mediaUrl = url || '';
+                                            setCommunityReviews(next);
+                                        }}
+                                    />
+                                ) : (
+                                    <ImageUpload
+                                        images={review.mediaUrl ? [review.mediaUrl] : []}
+                                        onChange={urls => {
+                                            const next = [...communityReviews];
+                                            next[i].mediaUrl = urls[0] || '';
+                                            setCommunityReviews(next);
+                                        }}
+                                        maxImages={1}
+                                    />
+                                )}
                                 
                                 <div>
                                     <label className="block text-xs font-bold text-stone-400 uppercase mb-1">Linked Product</label>

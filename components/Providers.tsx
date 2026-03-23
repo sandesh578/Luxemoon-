@@ -69,6 +69,7 @@ export interface SiteConfig {
   smsNotificationsEnabled: boolean;
   noticeBarEnabled?: boolean;
   noticeBarText?: string | null;
+  noticeBarStill?: boolean;
 }
 
 interface LocationContextType {

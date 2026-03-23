@@ -29,10 +29,10 @@ export async function generateMetadata(): Promise<Metadata> {
   const metadataBase = process.env.NEXT_PUBLIC_SITE_URL || "https://luxemoon.com.np";
 
   return {
-    title: config.metaTitle || `${config.storeName} | Nano Botox 4-in-1 Haircare`,
+    title: config.metaTitle || `${config.storeName} | Nano Botox 4-in-1 Cosmetics`,
     description:
       config.metaDescription ||
-      "LuxeMoon Nano Botox 4-in-1 haircare system: Anti-Hair Fall Shampoo, Shining Silk Hair Mask, and Soft & Silky Hair Serum.",
+      "LuxeMoon Nano Botox 4-in-1 cosmetics system: Anti-Hair Fall Shampoo, Shining Silk Hair Mask, and Soft & Silky Hair Serum.",
     metadataBase: new URL(metadataBase),
     icons: {
       icon: config.faviconUrl || "/favicon.ico",
@@ -55,6 +55,7 @@ export default async function RootLayout({
     globalDiscountEnd: rawConfig.globalDiscountEnd?.toISOString() ?? null,
     noticeBarText: noticeBar.noticeBarText,
     noticeBarEnabled: noticeBar.noticeBarEnabled,
+    noticeBarStill: noticeBar.noticeBarStill,
     currencyCode: normalizeCurrencyCode(rawConfig.currencyCode),
   };
 

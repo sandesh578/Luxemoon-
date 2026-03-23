@@ -20,7 +20,7 @@ export default async function TermsPage() {
                     <h2 className="text-xl font-bold text-stone-900 mt-8">Orders & Payment</h2>
                     <p>All orders are Cash on Delivery (COD). We reserve the right to cancel orders due to stock unavailability or suspicious activity.</p>
                     <h2 className="text-xl font-bold text-stone-900 mt-8">Delivery</h2>
-                    <p>Delivery times are estimated and may vary. Inside Kathmandu Valley: {config.estimatedDeliveryInside}. Outside Valley: {config.estimatedDeliveryOutside}.</p>
+                    <p>Delivery times are estimated and may vary based on your location. Standard delivery is typically within {config.estimatedDeliveryInside} in major cities, and {config.estimatedDeliveryOutside} in other regions.</p>
                     <h2 className="text-xl font-bold text-stone-900 mt-8">Returns & Refunds</h2>
                     <p>Unopened and unused products can be returned within 7 days of delivery for a full refund. Please contact us before returning any products.</p>
                     <h2 className="text-xl font-bold text-stone-900 mt-8">Contact</h2>
