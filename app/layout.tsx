@@ -11,8 +11,6 @@ import { validateServerEnv } from "@/lib/env";
 import { DEFAULT_LOCALE } from "@/lib/i18n";
 import { normalizeCurrencyCode } from "@/lib/currency";
 
-validateServerEnv();
-
 const playfair = Playfair_Display({
   subsets: ["latin"],
   variable: "--font-serif"
@@ -25,15 +23,34 @@ const lato = Lato({
 });
 
 export async function generateMetadata(): Promise<Metadata> {
+  try {
+    validateServerEnv();
+  } catch (e) {
+    console.warn("Environment validation skipped or failed during build:", e instanceof Error ? e.message : e);
+  }
   const config = await getSiteConfig();
-  const metadataBase = process.env.NEXT_PUBLIC_SITE_URL || "https://www.luxemoonbeauty.com";
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.luxemoonbeauty.com";
 
   return {
-    title: config.metaTitle || `${config.storeName} | Nano Botox 4-in-1 Cosmetics`,
+    title: {
+      default: config.metaTitle || "LuxeMoon | Official Korean Beauty & Haircare",
+      template: `%s | ${config.storeName || 'LuxeMoon'}`,
+    },
     description:
       config.metaDescription ||
       "LuxeMoon Nano Botox 4-in-1 cosmetics system: Anti-Hair Fall Shampoo, Shining Silk Hair Mask, and Soft & Silky Hair Serum.",
-    metadataBase: new URL(metadataBase),
+    metadataBase: new URL(baseUrl),
+    alternates: {
+      canonical: '/',
+    },
+    openGraph: {
+      title: config.metaTitle || "LuxeMoon | Official Korean Beauty",
+      description: config.metaDescription || undefined,
+      url: baseUrl,
+      siteName: config.storeName || 'LuxeMoon',
+      locale: 'en_US',
+      type: 'website',
+    },
     icons: {
       icon: config.faviconUrl || "/favicon.ico",
       shortcut: config.faviconUrl || "/favicon.ico",
@@ -47,6 +64,13 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  try {
+    validateServerEnv();
+  } catch (e) {
+    // During build, we might not have all env vars. We log but continue 
+    // because getSiteConfig has fallbacks.
+    console.warn("Environment validation skipped or failed in RootLayout:", e instanceof Error ? e.message : e);
+  }
   const [rawConfig, noticeBar] = await Promise.all([getSiteConfig(), getHomepageNotice()]);
 
   const config = {

@@ -113,20 +113,22 @@ function CommunityVideoCard({
 
       {/* Product Details */}
       <div className={`
-        mt-10 flex items-center justify-between gap-4 px-2 transition-all duration-700
+        mt-12 flex items-center justify-between gap-5 px-3 transition-all duration-700
         ${isActive || isHovered ? 'opacity-100 translate-y-2' : 'opacity-60 md:opacity-0 translate-y-0'}
       `}>
         <div className="flex items-center gap-4 min-w-0 flex-1">
-          <div className="relative w-12 h-12 shrink-0 rounded-2xl overflow-hidden bg-white border border-stone-100 shadow-sm">
-            <Image src={review.product?.image || "/placeholder.png"} alt="Product" className="object-cover" fill sizes="48px" />
+          <div className="relative w-14 h-14 shrink-0 rounded-2xl overflow-hidden bg-white border border-stone-100 shadow-md">
+            <Image src={review.product?.image || "/placeholder.png"} alt="Product" className="object-cover" fill sizes="56px" />
           </div>
           <div className="flex-1 min-w-0">
             {review.product && (
               <>
-                <Link href={`/products/${review.product.slug}`} className="block">
-                  <h3 className="text-[14px] font-bold text-stone-900 line-clamp-1 hover:text-amber-800 transition-colors uppercase tracking-tight">{review.product.name}</h3>
+                <Link href={`/products/${review.product.slug}`} className="block group/title">
+                  <h3 className="font-serif text-[16px] font-bold text-stone-900 line-clamp-1 group-hover/title:text-amber-800 transition-colors leading-tight">
+                    {review.product.name}
+                  </h3>
                 </Link>
-                <p className="text-[13px] text-stone-600 font-bold mt-1">
+                <p className="text-[13px] text-amber-900 font-bold mt-1 tracking-tight">
                   {formatCurrency(review.product.priceInside, currencyCode)}
                 </p>
               </>
@@ -136,10 +138,10 @@ function CommunityVideoCard({
         {review.product && (
           <QuickAddButton
             product={{ ...(review.product as any), priceOutside: review.product.priceInside }}
-            label="ADD"
+            label="ADD +"
             showIcon={false}
             className={`
-              px-6 py-3 rounded-full bg-stone-900 text-white text-[11px] font-bold tracking-[0.15em] hover:bg-stone-800 transition-all shadow-lg active:scale-95
+              px-6 py-3 rounded-full bg-stone-900 text-white text-[11px] font-bold tracking-[0.15em] hover:bg-amber-700 transition-all shadow-xl shadow-stone-900/10 active:scale-95
               ${isActive || isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}
             `}
           />

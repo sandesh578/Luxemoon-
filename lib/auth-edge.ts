@@ -4,9 +4,6 @@
  * It is used by middleware which runs in the Edge runtime.
  */
 import { SignJWT, jwtVerify } from "jose";
-import { validateServerEnv } from "./env";
-
-validateServerEnv();
 
 const secretKey = process.env.JWT_SECRET;
 if (!secretKey) {
