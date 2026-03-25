@@ -130,7 +130,7 @@ export const Navbar = () => {
             </div>
           </div>
         )}
-        <nav className="bg-[#F6EFE7]/90 backdrop-blur-xl border-b border-amber-900/5">
+        <nav className="bg-[#F6EFE7]/90 backdrop-blur-xl border-b border-amber-900/5 z-[100]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-20">
 

@@ -26,7 +26,7 @@ const lato = Lato({
 
 export async function generateMetadata(): Promise<Metadata> {
   const config = await getSiteConfig();
-  const metadataBase = process.env.NEXT_PUBLIC_SITE_URL || "https://luxemoon.com.np";
+  const metadataBase = process.env.NEXT_PUBLIC_SITE_URL || "https://www.luxemoonbeauty.com";
 
   return {
     title: config.metaTitle || `${config.storeName} | Nano Botox 4-in-1 Cosmetics`,

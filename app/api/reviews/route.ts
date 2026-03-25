@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { headers } from 'next/headers';
 import { ReviewSchema } from '@/lib/review-validation';
+import { getUserSession } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -16,6 +17,11 @@ function getClientIp(headersList: Headers): string {
 
 export async function POST(req: Request) {
     try {
+        const session = await getUserSession();
+        if (!session) {
+            return NextResponse.json({ error: 'You must be logged in to write a review' }, { status: 401 });
+        }
+
         const body = await req.json();
         const data = ReviewSchema.parse(body);
         const headersList = await headers();
@@ -47,9 +53,24 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Product not found' }, { status: 404 });
         }
 
+        // Check for verified purchase (Logic kept but DB write disabled until migration)
+        const deliveredOrder = await prisma.order.findFirst({
+            where: {
+                userId: session.userId,
+                status: 'DELIVERED',
+                items: {
+                    some: {
+                        productId: data.productId,
+                    },
+                },
+            },
+        });
+
+        // const isVerified = !!deliveredOrder;
+
         const review = await prisma.review.create({
             data: {
-                userName: data.userName,
+                userName: data.userName || session.name,
                 address: data.address,
                 rating: data.rating,
                 comment: data.comment,
@@ -58,6 +79,9 @@ export async function POST(req: Request) {
                 video: data.video,
                 approved: false, // Reviews should be approved by admin
                 ipAddress: ip,
+                // TEMPORARY: Disabled due to missing DB columns
+                // isVerified: isVerified,
+                // verifiedPurchase: isVerified,
             },
         });
 
@@ -69,6 +93,7 @@ export async function POST(req: Request) {
                 { status: 400 }
             );
         }
+        console.error('Review submission error:', error);
         return NextResponse.json({ error: 'Failed to submit review' }, { status: 500 });
     }
 }

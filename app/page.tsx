@@ -20,8 +20,10 @@ const QuickAddButton = dynamic(() => import('@/components/QuickAddButton').then(
 
 const getCachedHomepageData = unstable_cache(
   async () => {
+    // getSiteConfig handles its own internal upsert/catch
+    const config = await getSiteConfig();
+
     const [
-      config,
       content,
       featuredProductsRaw,
       newArrivalsRaw,
@@ -29,7 +31,6 @@ const getCachedHomepageData = unstable_cache(
       nanoplastiaProductsRaw,
       allActiveProductsRaw,
     ] = await Promise.all([
-      getSiteConfig(),
       prisma.homepageContent.findUnique({ where: { id: 1 } }),
       prisma.product.findMany({
         where: { isActive: true, isArchived: false, isDraft: false, isFeatured: true },
@@ -78,41 +79,81 @@ const getCachedHomepageData = unstable_cache(
       }),
     ]);
 
-    const sanitizeProducts = (products: any[]) => products.map(p => ({
-        ...p,
-        priceInside: calculateDiscountedPrice(Number(p.priceInside), p as any, config as any),
-        originalPrice: p.originalPrice ? Number(p.originalPrice) : null,
-    }));
+    const sanitizeProducts = (products: any[]) => (products || []).filter(Boolean).map(p => {
+        if (!p) return null;
+        // Ensure priceInside and originalPrice are converted to numbers for JSON serialization
+        const basePrice = p.priceInside ? Number(p.priceInside) : 0;
+        const originalPrice = p.originalPrice ? Number(p.originalPrice) : null;
+        
+        return {
+            ...p,
+            priceInside: calculateDiscountedPrice(basePrice, p as any, config as any),
+            originalPrice: originalPrice,
+            // Next.js cache doesn't like complex objects like Decimals
+            discountStart: p.discountStart?.toISOString() || null,
+            discountEnd: p.discountEnd?.toISOString() || null,
+        };
+    }).filter(Boolean);
 
     const productById = new Map(allActiveProductsRaw.map((product) => [product.id, product]));
     const communityReviewsRaw = Array.isArray((content as any)?.communityReviews) ? (content as any).communityReviews : [];
+    
     const fullCommunityReviews = communityReviewsRaw.map((r: any) => {
        if (!r.productId) return r;
        const p = productById.get(r.productId);
-       if (!p) return r;
-       const sp = sanitizeProducts([p])[0];
-       return { ...r, product: { ...sp, image: sp.images?.[0] || 'https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?q=80&w=200' } };
-    });
+       if (!p) return null;
+       const sanitizedList = sanitizeProducts([p]);
+       if (sanitizedList.length === 0) return null;
+       const sp = sanitizedList[0];
+       return { 
+         ...r, 
+         product: { 
+           ...sp, 
+           image: sp.images?.[0] || 'https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?q=80&w=200' 
+         } 
+       };
+    }).filter(Boolean);
 
     let bestSellersRaw = manualBestSellersRaw;
     if (manualBestSellersRaw.length < 4) {
-      const topSellingRaw = await prisma.product.findMany({
-        where: { 
-          isActive: true, 
-          isArchived: false, 
-          isDraft: false,
-          id: { notIn: manualBestSellersRaw.map(p => p.id) }
-        },
-        select: {
-          id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, discountPercent: true, discountFixed: true, discountStart: true, discountEnd: true
-        },
-        take: 4 - manualBestSellersRaw.length,
-        orderBy: { orderItems: { _count: 'desc' } },
-      });
-      bestSellersRaw = [...manualBestSellersRaw, ...topSellingRaw] as any[];
+      const takeAmount = 4 - manualBestSellersRaw.length;
+      try {
+        const topSellingRaw = await prisma.product.findMany({
+          where: { 
+            isActive: true, 
+            isArchived: false, 
+            isDraft: false,
+            id: { notIn: manualBestSellersRaw.map(p => p.id) }
+          },
+          select: {
+            id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, discountPercent: true, discountFixed: true, discountStart: true, discountEnd: true
+          },
+          take: takeAmount,
+          orderBy: { orderItems: { _count: 'desc' } },
+        });
+        bestSellersRaw = [...manualBestSellersRaw, ...topSellingRaw] as any[];
+      } catch (e) {
+        // Fallback if orderBy _count fails (e.g. relation issue)
+        console.error("Top selling query failed, falling back to simple query", e);
+        const fallbackRaw = await prisma.product.findMany({
+          where: { 
+            isActive: true, 
+            isArchived: false, 
+            isDraft: false,
+            id: { notIn: manualBestSellersRaw.map(p => p.id) }
+          },
+          select: {
+            id: true, slug: true, name: true, images: true, priceInside: true, originalPrice: true, discountPercent: true, discountFixed: true, discountStart: true, discountEnd: true
+          },
+          take: takeAmount,
+          orderBy: { createdAt: 'desc' },
+        });
+        bestSellersRaw = [...manualBestSellersRaw, ...fallbackRaw] as any[];
+      }
     }
+
     return [
-        content,
+        JSON.parse(JSON.stringify(content)), // Deep clone to handle any JSON serialization quirks
         sanitizeProducts(featuredProductsRaw),
         sanitizeProducts(newArrivalsRaw),
         sanitizeProducts(bestSellersRaw),
@@ -120,16 +161,19 @@ const getCachedHomepageData = unstable_cache(
         fullCommunityReviews
     ] as const;
   },
-  ['home-page-data'],
+  ['home-page-data-v2'], // Bumped cache key
   { tags: ['products', 'homepage-content'], revalidate: 300 }
 );
 
 export default async function Home() {
   const locale = await getLocaleServer();
   const t = (key: string, vars?: Record<string, string | number>) => translate(locale, key, vars);
-  const [homeData, config] = await Promise.all([getCachedHomepageData(), getSiteConfig()]);
+  
+  const config = await getSiteConfig();
+  const homeData = await getCachedHomepageData();
+  
   const [content, featuredProducts, newArrivals, bestSellers, nanoplastiaProducts, communityReviews] = homeData;
-  const currencyCode = config.currencyCode === 'NPR' ? 'NPR' : 'USD';
+  const currencyCode = (config?.currencyCode as any) === 'NPR' ? 'NPR' : 'USD';
   const formatPrice = (amount: number) => formatCurrency(amount, currencyCode);
 
   const nanoplastiaOrder = ['anti-hair-fall-shampoo', 'shining-silk-hair-mask', 'soft-silky-serum'];
@@ -153,16 +197,18 @@ export default async function Home() {
       <HeroSlider slides={slides} />
 
       {/* 2. Best Sellers */}
-      <ProductGrid
-        title={t('home.bestTitle')}
-        subtitle={t('home.bestSubtitle')}
-        products={bestSellers}
-        href="/shop?filter=bestsellers"
-        viewAllLabel={t('home.viewAll')}
-        offerLabel={t('home.offer')}
-        newLabel={t('home.newBadge')}
-        currencyCode={currencyCode}
-      />
+      {bestSellers.length > 0 && (
+        <ProductGrid
+          title={t('home.bestTitle')}
+          subtitle={t('home.bestSubtitle')}
+          products={bestSellers}
+          href="/shop?filter=bestsellers"
+          viewAllLabel={t('home.viewAll')}
+          offerLabel={t('home.offer')}
+          newLabel={t('home.newBadge')}
+          currencyCode={currencyCode}
+        />
+      )}
 
       {/* 3. Trust Bar */}
       <div className="bg-stone-900 overflow-hidden py-3.5 md:py-4 border-y border-stone-800">
@@ -277,28 +323,32 @@ export default async function Home() {
       )}
 
       {/* 6. Featured Products */}
-      <ProductGrid
-        title={t('home.featuredTitle')}
-        subtitle={t('home.featuredSubtitle')}
-        products={featuredProducts}
-        href="/shop?filter=featured"
-        viewAllLabel={t('home.viewAll')}
-        offerLabel={t('home.offer')}
-        newLabel={t('home.newBadge')}
-        currencyCode={currencyCode}
-      />
+      {featuredProducts.length > 0 && (
+        <ProductGrid
+          title={t('home.featuredTitle')}
+          subtitle={t('home.featuredSubtitle')}
+          products={featuredProducts}
+          href="/shop?filter=featured"
+          viewAllLabel={t('home.viewAll')}
+          offerLabel={t('home.offer')}
+          newLabel={t('home.newBadge')}
+          currencyCode={currencyCode}
+        />
+      )}
 
       {/* 7. New Arrivals */}
-      <ProductGrid
-        title={t('home.newTitle')}
-        subtitle={t('home.newSubtitle')}
-        products={newArrivals}
-        href="/shop?filter=new"
-        viewAllLabel={t('home.viewAll')}
-        offerLabel={t('home.offer')}
-        newLabel={t('home.newBadge')}
-        currencyCode={currencyCode}
-      />
+      {newArrivals.length > 0 && (
+        <ProductGrid
+          title={t('home.newTitle')}
+          subtitle={t('home.newSubtitle')}
+          products={newArrivals}
+          href="/shop?filter=new"
+          viewAllLabel={t('home.viewAll')}
+          offerLabel={t('home.offer')}
+          newLabel={t('home.newBadge')}
+          currencyCode={currencyCode}
+        />
+      )}
 
       {/* 8. Campaign Banners */}
       {(content?.banners as any[])?.filter((b: any) => b?.image)?.length > 0 && (
@@ -334,7 +384,7 @@ export default async function Home() {
 
       {/* 9. Loved by Community */}
       {communityReviews && communityReviews.length > 0 && (
-        <section className="py-20 bg-[#FDFCFB]">
+        <section className="bg-[#FDFCFB]">
           <CommunitySlider reviews={communityReviews as any} currencyCode={currencyCode} />
         </section>
       )}
@@ -390,88 +440,77 @@ function ProductGrid({
   newLabel,
   currencyCode,
 }: {
-  title: string,
-  subtitle: string,
-  products: any[],
-  href: string,
-  viewAllLabel: string,
-  offerLabel: string,
-  newLabel: string,
-  currencyCode: 'USD' | 'NPR',
+  title: string;
+  subtitle: string;
+  products: any[];
+  href: string;
+  viewAllLabel: string;
+  offerLabel: string;
+  newLabel: string;
+  currencyCode: 'USD' | 'NPR';
 }) {
-  if (!products || products.length === 0) return null;
-  const formatPrice = (amount: number) => formatCurrency(amount, currencyCode);
   return (
-    <section className="py-16 md:py-20 lg:py-24 px-4 bg-[#FDFCFB] border-t border-stone-200/60">
+    <section className="py-16 md:py-20 lg:py-24 px-4 bg-[#FDFCFB]">
       <div className="max-w-7xl mx-auto space-y-10 md:space-y-14">
-        <AnimateIn>
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 md:gap-6">
-            <div className="space-y-2">
-              <h2 className="text-2xl md:text-3xl lg:text-4xl font-semibold text-stone-900 tracking-tight font-serif">{title}</h2>
-              <p className="text-stone-500 text-sm md:text-base max-w-lg">{subtitle}</p>
-              <div className="section-divider" />
-            </div>
-            <Link href={href} className="rounded-full px-5 py-2 bg-stone-900 text-white text-xs font-bold tracking-wider hover:bg-stone-800 hover:scale-105 transition-all duration-300 flex items-center gap-2 shrink-0">
-              {viewAllLabel} <ChevronRight className="w-3 h-3" />
-            </Link>
+        <AnimateIn className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div className="space-y-3">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-semibold text-stone-900 leading-tight tracking-tight">
+              {title}
+            </h2>
+            <p className="text-stone-500 max-w-lg text-sm md:text-base">{subtitle}</p>
           </div>
+          <Link
+            href={href}
+            className="group inline-flex items-center gap-2 font-bold text-stone-900 border-b-2 border-stone-200 pb-1 hover:border-amber-600 transition-all text-sm uppercase tracking-wider"
+          >
+            {viewAllLabel} <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          </Link>
         </AnimateIn>
 
-        <StaggerContainer className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-7 lg:gap-9">
-          {products.map((p) => {
-            const derivedDiscount = p.discountPercent && p.discountPercent > 0
-              ? p.discountPercent
-              : (p.originalPrice && p.originalPrice > p.priceInside)
-                ? Math.max(1, Math.round(((p.originalPrice - p.priceInside) / p.originalPrice) * 100))
-                : 0;
-
-            return (
-              <StaggerItem key={p.id} className="group flex flex-col justify-between h-full rounded-2xl border border-stone-200/70 bg-white/80 p-2.5 md:p-3 shadow-sm hover:shadow-md transition-shadow duration-300">
-                <Link href={`/products/${p.slug}`} className="block">
-                  <div className="aspect-[4/5] rounded-xl overflow-hidden bg-stone-100 mb-3 md:mb-4 relative shadow-sm transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-1 group-hover:shadow-md">
-                    {p.images && p.images[0] ? (
-                      <Image
-                        src={p.images[0]}
-                        className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
-                        alt={p.name}
-                        fill
-                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 bg-gradient-to-br from-stone-200 to-stone-100 flex items-center justify-center">
-                        <span className="text-stone-500 text-xs font-semibold tracking-wider">LUXE MOON</span>
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                    {derivedDiscount > 0 && (
-                      <span className="absolute top-3 left-3 bg-amber-600 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-sm">
-                        {derivedDiscount}% OFF
-                      </span>
-                    )}
-                    {p.isNew && (
-                      <span className="absolute top-3 right-3 bg-stone-900 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-sm">
-                        {newLabel.toUpperCase()}
-                      </span>
-                    )}
-                  </div>
-                  <h3 className="text-[13px] md:text-base font-semibold text-stone-900 mb-1 group-hover:text-amber-700 transition-colors leading-snug line-clamp-2">{p.name}</h3>
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-stone-900 text-sm md:text-base">{formatPrice(p.priceInside)}</span>
-                    {p.originalPrice && p.originalPrice > p.priceInside && (
-                      <span className="text-stone-400 line-through text-xs">{formatPrice(p.originalPrice)}</span>
-                    )}
-                  </div>
-                </Link>
-                <div className="mt-3">
-                  <QuickAddButton
-                    product={p}
-                    label="Quick Add"
-                    className="inline-flex mx-auto items-center justify-center gap-2 px-4 py-2 rounded-full bg-[#4a2f1d] text-white text-xs font-medium tracking-wide transition-all duration-300 hover:bg-[#3a2416] hover:scale-105 hover:shadow-md active:scale-95"
-                  />
+        <StaggerContainer className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
+          {products.map((p) => (
+            <StaggerItem key={p.id}>
+              <Link href={`/products/${p.slug}`} className="block group">
+                <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-stone-100 mb-4 shadow-sm border border-stone-200/50">
+                  {p.images && p.images[0] && (
+                    <Image
+                      src={p.images[0]}
+                      className="object-cover group-hover:scale-105 transition-transform duration-700"
+                      alt={p.name}
+                      fill
+                      sizes="(max-width: 640px) 50vw, 25vw"
+                    />
+                  )}
+                  {p.originalPrice && p.originalPrice > p.priceInside && (
+                    <span className="absolute top-3 left-3 bg-amber-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-lg z-10">
+                      {offerLabel}
+                    </span>
+                  )}
+                  {p.isNew && (
+                    <span className="absolute top-3 right-3 bg-stone-900 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-lg z-10 uppercase tracking-widest">
+                      {newLabel}
+                    </span>
+                  )}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-500" />
                 </div>
-              </StaggerItem>
-            );
-          })}
+                <div className="space-y-1.5 px-1">
+                  <h3 className="text-sm font-bold text-stone-900 line-clamp-1 group-hover:text-amber-700 transition-colors uppercase tracking-tight">
+                    {p.name}
+                  </h3>
+                  <div className="flex items-center gap-2.5">
+                    <span className="font-bold text-stone-900 text-sm">
+                      {formatCurrency(p.priceInside, currencyCode)}
+                    </span>
+                    {p.originalPrice && p.originalPrice > p.priceInside && (
+                      <span className="text-stone-400 line-through text-[11px] font-medium">
+                        {formatCurrency(p.originalPrice, currencyCode)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </Link>
+            </StaggerItem>
+          ))}
         </StaggerContainer>
       </div>
     </section>

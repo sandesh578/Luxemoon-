@@ -25,19 +25,19 @@ const DEFAULT_SITE_CONFIG: SiteConfig = {
   allowStacking: false,
   festiveSaleEnabled: false,
   contactPhone: "+977 9800000000",
-  contactEmail: "hello@luxemoon.com.np",
+  contactEmail: "hello@luxemoonbeauty.com",
   contactAddress: "Durbarmarg, Kathmandu",
   whatsappNumber: null,
   facebookUrl: null,
   instagramUrl: null,
   tiktokUrl: null,
-  metaTitle: null,
-  metaDescription: null,
+  metaTitle: "Luxe Moon | Premium Haircare & Cosmetics",
+  metaDescription: "Experience the sophistication of Korean beauty with Luxe Moon's Nano Botox 4-in-1 system. Professional results for stronger, smoother, and shinier hair.",
   footerContent: "<p>3-step haircare system built for stronger roots, deep nourishment, and smooth frizz-controlled shine.</p>",
   privacyPolicy: "<h2>Privacy Policy</h2><p>We respect your privacy. Your data is never sold.</p>",
   termsConditions: "<h2>Terms & Conditions</h2><p>By using this site, you agree to our terms.</p>",
   aboutContent: "<h2>Our Story</h2><p>Luxe Moon is premium Korean haircare created for the world.</p>",
-  deliveryPolicy: "<h2>Delivery Policy</h2><p>We deliver across Nepal. 1-2 days inside valley, 3-5 days outside.</p>",
+  deliveryPolicy: "<h2>Delivery Policy</h2><p>We deliver nationwide. 1-2 days inside valley, 3-5 days outside.</p>",
   refundPolicy: "<h2>Refund Policy</h2><p>7-day return policy for unused products.</p>",
   emailNotificationsEnabled: false,
   smsNotificationsEnabled: false,
@@ -85,11 +85,21 @@ const SITE_CONFIG_CREATE_DATA = {
 };
 
 async function getOrCreateSiteConfig() {
-  return prisma.siteConfig.upsert({
-    where: { id: DEFAULT_SITE_CONFIG.id },
-    update: {},
-    create: SITE_CONFIG_CREATE_DATA,
-  });
+  try {
+    return await prisma.siteConfig.upsert({
+      where: { id: DEFAULT_SITE_CONFIG.id },
+      update: {},
+      create: SITE_CONFIG_CREATE_DATA,
+    });
+  } catch (error) {
+    // If multiple requests try to upsert at once, one might fail with P2002.
+    // In that case, we just try to find the record that was just created.
+    const config = await prisma.siteConfig.findUnique({
+      where: { id: DEFAULT_SITE_CONFIG.id },
+    });
+    if (config) return config;
+    throw error;
+  }
 }
 
 async function _getSiteConfig() {

@@ -71,7 +71,7 @@ export default function SettingsClient({ initialData }: { initialData: Record<st
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <ToggleField label="Show Language Toggle" checked={Boolean(formData.languageToggleEnabled)} onChange={v => set('languageToggleEnabled', v)} description="Only show the Nepali / English switcher on the storefront when enabled." />
+              <ToggleField label="Show Language Toggle" checked={Boolean(formData.languageToggleEnabled)} onChange={v => set('languageToggleEnabled', v)} description="Only show the multi-language switcher on the storefront when enabled." />
               <ToggleField label="Show Stock On Product Page" checked={Boolean(formData.showStockOnProduct)} onChange={v => set('showStockOnProduct', v)} description="Display the stock badge on product detail pages only when enabled." />
             </div>
             <div className="border-t border-stone-200 pt-5 space-y-4">

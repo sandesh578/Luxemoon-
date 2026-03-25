@@ -125,6 +125,9 @@ async function main() {
         isActive: true,
         isArchived: false,
         isDraft: false,
+        isFeatured: true,
+        isNew: true,
+        isBestSeller: true,
         deletedAt: null,
         discountPercent: 0,
         discountFixed: null,
@@ -136,6 +139,9 @@ async function main() {
         isActive: true,
         isArchived: false,
         isDraft: false,
+        isFeatured: true,
+        isNew: true,
+        isBestSeller: true,
       },
     });
   }
@@ -156,16 +162,16 @@ async function main() {
       storeName: 'LuxeMoon',
       bannerText: 'Nano Botox Biotin + Keratin 4-in-1',
       contactPhone: '+977 9800000000',
-      contactEmail: 'hello@luxemoon.com.np',
-      contactAddress: 'Kathmandu, Nepal',
+      contactEmail: 'hello@luxemoonbeauty.com',
+      contactAddress: 'Kathmandu',
       deliveryChargeInside: 0,
       deliveryChargeOutside: 150,
       freeDeliveryThreshold: 5000,
       estimatedDeliveryInside: '1-2 days',
       estimatedDeliveryOutside: '3-5 days',
-      metaTitle: 'LuxeMoon Nano Botox 4-in-1 | Official Haircare Store Nepal',
+      metaTitle: 'LuxeMoon Nano Botox 4-in-1 | Official Haircare Store',
       metaDescription:
-        'Official LuxeMoon Nepal store for Nano Botox Biotin + Keratin 4-in-1 haircare: Anti-Hair Fall Shampoo, Shining Silk Hair Mask, and Soft & Silky Hair Serum.',
+        'Official LuxeMoon store for Nano Botox Biotin + Keratin 4-in-1 haircare: Anti-Hair Fall Shampoo, Shining Silk Hair Mask, and Soft & Silky Hair Serum.',
       footerContent:
         '3-step haircare system built for stronger roots, deep nourishment, and smooth frizz-controlled shine.',
       festiveSaleEnabled: true,
@@ -175,8 +181,8 @@ async function main() {
       storeName: 'LuxeMoon',
       bannerText: 'Nano Botox Biotin + Keratin 4-in-1',
       contactPhone: '+977 9800000000',
-      contactEmail: 'hello@luxemoon.com.np',
-      contactAddress: 'Kathmandu, Nepal',
+      contactEmail: 'hello@luxemoonbeauty.com',
+      contactAddress: 'Kathmandu',
       deliveryChargeInside: 0,
       deliveryChargeOutside: 150,
       freeDeliveryThreshold: 5000,
@@ -185,9 +191,9 @@ async function main() {
       estimatedDeliveryInside: '1-2 days',
       estimatedDeliveryOutside: '3-5 days',
       globalDiscountPercent: 0,
-      metaTitle: 'LuxeMoon Nano Botox 4-in-1 | Official Haircare Store Nepal',
+      metaTitle: 'LuxeMoon Nano Botox 4-in-1 | Official Haircare Store',
       metaDescription:
-        'Official LuxeMoon Nepal store for Nano Botox Biotin + Keratin 4-in-1 haircare: Anti-Hair Fall Shampoo, Shining Silk Hair Mask, and Soft & Silky Hair Serum.',
+        'Official LuxeMoon store for Nano Botox Biotin + Keratin 4-in-1 haircare: Anti-Hair Fall Shampoo, Shining Silk Hair Mask, and Soft & Silky Hair Serum.',
       footerContent:
         '3-step haircare system built for stronger roots, deep nourishment, and smooth frizz-controlled shine.',
       emailNotificationsEnabled: false,
@@ -223,6 +229,9 @@ async function main() {
           link: '/products/soft-silky-serum',
         },
       ],
+      heritageSubtitle: 'OUR HERITAGE',
+      heritageTitle: 'Honoring the Art of Korean Cosmetics.',
+      heritageBody: 'Luxe Moon brings the sophisticated tradition of Korean beauty innovation to you. Our formulas combine ancient botanical wisdom with modern technology, delivering professional salon results in the comfort of your home.',
       promotionalImages: ['/products/mask.jpg'],
     },
     create: {
@@ -239,6 +248,9 @@ async function main() {
       ],
       noticeBarText: 'Sulfate-Free | Paraben-Free | Silicone-Free',
       noticeBarEnabled: true,
+      heritageSubtitle: 'OUR HERITAGE',
+      heritageTitle: 'Honoring the Art of Korean Cosmetics.',
+      heritageBody: 'Luxe Moon brings the sophisticated tradition of Korean beauty innovation to you. Our formulas combine ancient botanical wisdom with modern technology, delivering professional salon results in the comfort of your home.',
       banners: [
         {
           image: '/products/shampoo.jpg',

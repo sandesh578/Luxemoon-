@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, MessageCircle, Play, Plus, Star } from 'lucide-react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import { AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, MessageCircle, Play, Plus, Star, Lock } from 'lucide-react';
 import { OptimizedImage as Image } from '@/components/OptimizedImage';
 import { optimizeImage } from '@/lib/image';
 import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
 interface Review {
   id: string;
@@ -27,7 +28,19 @@ type Props = {
 
 const REVIEWS_PER_PAGE = 10;
 
+type SessionState = {
+  authenticated: boolean;
+  user?: {
+    userId?: string;
+    email?: string;
+    name?: string;
+  };
+};
+
 export default function ProductReviewsSection({ productId, reviews = [] }: Props) {
+  const router = useRouter();
+  const [session, setSession] = useState<SessionState>({ authenticated: false });
+  const [loadingSession, setLoadingSession] = useState(true);
   const [reviewError, setReviewError] = useState<string | null>(null);
   const [reviewMediaModal, setReviewMediaModal] = useState<{ images: string[]; index: number } | null>(null);
   const [reviewRatingFilter, setReviewRatingFilter] = useState<number | 'all'>('all');
@@ -45,6 +58,27 @@ export default function ProductReviewsSection({ productId, reviews = [] }: Props
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [reviewPage, setReviewPage] = useState(1);
+
+  const fetchSession = useCallback(async () => {
+    try {
+      const response = await fetch('/api/auth/session', { cache: 'no-store' });
+      const data = (await response.json()) as SessionState;
+      if (data?.authenticated) {
+        setSession(data);
+        setReviewForm(prev => ({ ...prev, userName: data.user?.name || '' }));
+      } else {
+        setSession({ authenticated: false });
+      }
+    } catch {
+      setSession({ authenticated: false });
+    } finally {
+      setLoadingSession(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSession();
+  }, [fetchSession]);
 
   const safeReviews = useMemo(() => Array.isArray(reviews) ? reviews : [], [reviews]);
   const avgRating = safeReviews.length > 0 ? (safeReviews.reduce((sum, review) => sum + review.rating, 0) / safeReviews.length).toFixed(1) : null;
@@ -184,56 +218,78 @@ export default function ProductReviewsSection({ productId, reviews = [] }: Props
 
   return (
     <>
-      <div className="mb-16 rounded-[44px] bg-white/90 p-8 shadow-xl shadow-stone-200/60 ring-1 ring-stone-100 lg:p-12" id="reviews-section">
-        <div className="flex flex-col gap-10 lg:flex-row lg:items-center lg:justify-between">
-          <div className="lg:max-w-2xl">
-            <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-4 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-amber-700">
+      <div className="mb-16 rounded-[44px] bg-white/95 p-8 shadow-2xl shadow-stone-200/60 ring-1 ring-stone-100 lg:p-14" id="reviews-section">
+        <div className="flex flex-col gap-12 lg:flex-row lg:items-stretch lg:justify-between">
+          
+          {/* Left: Branding & Header */}
+          <div className="flex flex-col justify-center lg:max-w-[280px]">
+            <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-4 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-amber-700 w-fit">
               Community Proof
             </span>
-            <h2 className="font-serif text-3xl font-bold text-stone-900 md:text-5xl mt-4">Customer Feed</h2>
-            <p className="mt-3 text-lg text-stone-500">Authentic experiences from our beloved community.</p>
+            <h2 className="font-serif text-3xl font-bold text-stone-900 md:text-5xl mt-5 leading-tight">Customer Feed</h2>
+            <p className="mt-4 text-base leading-relaxed text-stone-500">Authentic experiences from our beloved community.</p>
+          </div>
 
-            <div className="mt-8 flex flex-col sm:flex-row items-center gap-6 w-full">
-              <div className="w-full sm:w-auto shrink-0 rounded-3xl border border-stone-100 bg-stone-50 px-8 py-6 text-center">
-                <div className="mb-1 text-5xl font-bold leading-none text-stone-900">{avgRating || '5.0'}</div>
-                <div className="mb-1 flex justify-center text-sm text-amber-500">
+          {/* Center: Prominent Stats (Vertically Longer) */}
+          <div className="flex flex-1 flex-col sm:flex-row items-stretch gap-10 bg-stone-50/80 rounded-[40px] p-8 lg:p-12 border border-stone-100 shadow-inner">
+              <div className="w-full sm:w-44 shrink-0 text-center flex flex-col justify-center border-b sm:border-b-0 sm:border-r border-stone-200/60 pb-8 sm:pb-0 sm:pr-10">
+                <div className="mb-1 text-7xl font-bold tracking-tighter text-stone-900">{avgRating || '5.0'}</div>
+                <div className="mb-3 flex justify-center text-xl text-amber-500">
                   {[1, 2, 3, 4, 5].map((star) => (
-                    <span key={star}>{star <= Math.round(Number(avgRating || 5)) ? '★' : '☆'}</span>
+                    <span key={star} className="drop-shadow-sm">{star <= Math.round(Number(avgRating || 5)) ? '★' : '☆'}</span>
                   ))}
                 </div>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400">{reviews.length} Experiences</span>
+                <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-stone-400">{reviews.length} Experiences</span>
               </div>
 
-              <div className="w-full sm:min-w-[200px] flex-1 space-y-2">
+              <div className="flex-1 flex flex-col justify-center space-y-3.5">
                 {[5, 4, 3, 2, 1].map((stars) => {
                   const count = ratingCounts[stars as keyof typeof ratingCounts] || 0;
                   const percent = reviews.length > 0 ? Math.round((count / reviews.length) * 100) : (stars === 5 ? 100 : 0);
                   return (
-                    <div key={stars} className="flex cursor-help items-center gap-3 text-sm group">
-                      <span className="w-12 text-xs font-bold text-stone-500">{stars} Star</span>
-                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-stone-100">
-                        <div className="h-full rounded-full bg-amber-400 transition-all duration-1000 ease-out" style={{ width: `${percent}%` }} />
+                    <div key={stars} className="flex cursor-help items-center gap-4 text-sm group">
+                      <span className="w-12 text-[11px] font-bold text-stone-500">{stars} Star</span>
+                      <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-stone-200/50">
+                        <div className="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-500 transition-all duration-1000 ease-out shadow-[0_0_8px_rgba(245,158,11,0.3)]" style={{ width: `${percent}%` }} />
                       </div>
-                      <span className="w-8 text-right text-[10px] font-bold text-stone-400">{percent}%</span>
+                      <span className="w-10 text-right text-[11px] font-bold text-stone-400">{percent}%</span>
                     </div>
                   );
                 })}
               </div>
-            </div>
           </div>
 
-          <div className="flex w-full flex-col items-center space-y-4 rounded-[32px] border border-amber-100/50 bg-amber-50 p-8 text-center lg:w-1/3">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-lg transition-transform group-hover:scale-110">
+          {/* Right: CTA Section */}
+          <div className="flex w-full flex-col items-center justify-center space-y-5 rounded-[40px] border border-amber-100/50 bg-amber-50/50 p-8 text-center lg:w-[280px]">
+            <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-white shadow-xl shadow-amber-900/5 transition-transform hover:scale-110">
               <Star className="h-8 w-8 fill-amber-500 text-amber-500" />
             </div>
-            <h3 className="font-serif text-2xl font-bold text-stone-900">Your hair journey matters.</h3>
-            <p className="text-sm text-stone-600">Help the community by sharing your results today.</p>
-            <button
-              onClick={() => document.getElementById('review-form')?.scrollIntoView({ behavior: 'smooth' })}
-              className="rounded-2xl bg-stone-900 px-8 py-3 text-sm font-bold text-white shadow-xl shadow-stone-900/20 transition-colors hover:bg-stone-800"
-            >
-              WRITE A REVIEW
-            </button>
+            <div>
+              <h3 className="font-serif text-2xl font-bold text-stone-900">Your glow?</h3>
+              <p className="mt-1 text-sm text-stone-600">Share your results today.</p>
+            </div>
+            
+            <div className="w-full pt-2 flex flex-col items-center gap-4">
+              <button
+                onClick={() => {
+                  if (session.authenticated) {
+                    document.getElementById('review-form')?.scrollIntoView({ behavior: 'smooth' });
+                  } else {
+                    router.push('/login?redirect=' + encodeURIComponent(window.location.pathname + '#review-form'));
+                  }
+                }}
+                className="w-full rounded-2xl bg-stone-900 py-4 text-xs font-bold tracking-widest text-white shadow-xl shadow-stone-900/20 transition-all hover:bg-stone-800 active:scale-95"
+              >
+                {session.authenticated ? 'WRITE A REVIEW' : 'LOGIN TO REVIEW'}
+              </button>
+              
+              {!session.authenticated && !loadingSession && (
+                <div className="flex items-center gap-2 text-[10px] font-bold text-amber-700 bg-white/80 border border-amber-100/50 px-4 py-2 rounded-full shadow-sm">
+                  <Lock className="w-3 h-3" />
+                  <span className="uppercase tracking-wider">Members Only</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -370,7 +426,7 @@ export default function ProductReviewsSection({ productId, reviews = [] }: Props
         </div>
       )}
 
-      {!reviewSubmitted ? (
+      {session.authenticated && !reviewSubmitted ? (
         <div id="review-form" className="relative mx-auto max-w-xl overflow-hidden rounded-3xl border border-stone-100 bg-white p-6 shadow-xl md:p-10">
           <div className="absolute left-0 top-0 h-2 w-full bg-gradient-to-r from-amber-200 via-amber-300 to-amber-200" />
 
@@ -413,7 +469,7 @@ export default function ProductReviewsSection({ productId, reviews = [] }: Props
               if (response.ok) {
                 setReviewSubmitted(true);
                 toast.success('Your review has been submitted for approval!');
-                setReviewForm({ userName: '', address: '', rating: 0, comment: '', images: [], video: null });
+                setReviewForm({ userName: session.user?.name || '', address: '', rating: 0, comment: '', images: [], video: null });
               } else {
                 const data = await response.json();
                 const message = data.error || 'We could not submit your review right now. Please try again in a moment.';
@@ -508,7 +564,7 @@ export default function ProductReviewsSection({ productId, reviews = [] }: Props
             </button>
           </form>
         </div>
-      ) : (
+      ) : session.authenticated && reviewSubmitted ? (
         <div className="mx-auto max-w-xl space-y-4 rounded-[48px] border border-amber-100 bg-amber-50 p-12 text-center">
           <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-xl">
             <CheckCircle2 className="h-10 w-10 text-amber-500" />
@@ -516,6 +572,22 @@ export default function ProductReviewsSection({ productId, reviews = [] }: Props
           <h3 className="font-serif text-3xl font-bold text-stone-900">Experience Received</h3>
           <p className="text-stone-600">Thank you for sharing your journey. Our team will verify and feature it soon!</p>
           <button onClick={() => setReviewSubmitted(false)} className="text-sm font-bold text-amber-600 hover:underline">Write another review</button>
+        </div>
+      ) : !loadingSession && (
+        <div className="mx-auto max-w-xl space-y-6 rounded-[48px] border border-amber-100 bg-amber-50/50 p-12 text-center backdrop-blur-sm">
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-xl">
+            <Lock className="h-10 w-10 text-amber-500" />
+          </div>
+          <div>
+            <h3 className="font-serif text-2xl font-bold text-stone-900">Join the Community</h3>
+            <p className="mt-2 text-stone-600">Please log in to your account to share your experience with this product.</p>
+          </div>
+          <button
+            onClick={() => router.push('/login?redirect=' + encodeURIComponent(window.location.pathname + '#review-form'))}
+            className="rounded-2xl bg-stone-900 px-10 py-4 text-sm font-bold text-white shadow-xl shadow-stone-900/20 transition-all hover:bg-stone-800 active:scale-95"
+          >
+            LOGIN TO YOUR ACCOUNT
+          </button>
         </div>
       )}
 

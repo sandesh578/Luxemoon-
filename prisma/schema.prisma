@@ -1,5 +1,5 @@
 // Luxe Moon - Premium Brand Schema
-// Korean Haircare eCommerce for Nepal
+// Korean Haircare eCommerce for Global Markets
 
 generator client {
   provider      = "prisma-client-js"
@@ -341,7 +341,7 @@ model SiteConfig {
 
   // Contact
   contactPhone   String @default("+977 9800000000")
-  contactEmail   String @default("hello@luxemoon.com.np")
+  contactEmail   String @default("hello@luxemoonbeauty.com")
   contactAddress String @default("Durbarmarg, Kathmandu")
 
   // Social & Messaging

@@ -1,53 +1,53 @@
-// Official Nepal Province → District mapping (all 77 districts)
+// Global Region → Area mapping for shipping and pricing
 
-export const NEPAL_PROVINCES: Record<string, string[]> = {
-    "Koshi Province": [
+export const SHIPPING_REGIONS: Record<string, string[]> = {
+    "Koshi": [
         "Bhojpur", "Dhankuta", "Ilam", "Jhapa", "Khotang",
         "Morang", "Okhaldhunga", "Panchthar", "Sankhuwasabha",
         "Solukhumbu", "Sunsari", "Taplejung", "Terhathum", "Udayapur"
     ],
-    "Madhesh Province": [
+    "Madhesh": [
         "Bara", "Dhanusha", "Mahottari", "Parsa",
         "Rautahat", "Saptari", "Sarlahi", "Siraha"
     ],
-    "Bagmati Province": [
+    "Bagmati": [
         "Bhaktapur", "Chitwan", "Dhading", "Dolakha",
         "Kathmandu", "Kavrepalanchok", "Lalitpur", "Makwanpur",
         "Nuwakot", "Ramechhap", "Rasuwa", "Sindhuli", "Sindhupalchok"
     ],
-    "Gandaki Province": [
+    "Gandaki": [
         "Baglung", "Gorkha", "Kaski", "Lamjung",
         "Manang", "Mustang", "Myagdi", "Nawalparasi East",
         "Parbat", "Syangja", "Tanahun"
     ],
-    "Lumbini Province": [
+    "Lumbini": [
         "Arghakhanchi", "Banke", "Bardiya", "Dang",
         "Gulmi", "Kapilvastu", "Nawalparasi West", "Palpa",
         "Pyuthan", "Rolpa", "Rukum East", "Rupandehi"
     ],
-    "Karnali Province": [
+    "Karnali": [
         "Dailekh", "Dolpa", "Humla", "Jajarkot", "Jumla",
         "Kalikot", "Mugu", "Rukum West", "Salyan", "Surkhet"
     ],
-    "Sudurpashchim Province": [
+    "Sudurpashchim": [
         "Achham", "Baitadi", "Bajhang", "Bajura",
         "Dadeldhura", "Darchula", "Doti", "Kailali", "Kanchanpur"
     ]
 };
 
-// Kathmandu Valley districts for auto-detection
-export const VALLEY_DISTRICTS = ["Kathmandu", "Lalitpur", "Bhaktapur"];
+// Core urban areas for auto-detection (Inside/Outside Valley logic)
+export const CORE_URBAN_AREAS = ["Kathmandu", "Lalitpur", "Bhaktapur"];
 
-export function getDistrictsForProvince(province: string): string[] {
-    return NEPAL_PROVINCES[province] || [];
+export function getAreasForRegion(region: string): string[] {
+    return SHIPPING_REGIONS[region] || [];
 }
 
-export function isValidProvinceDistrict(province: string, district: string): boolean {
-    const districts = NEPAL_PROVINCES[province];
-    if (!districts) return false;
-    return districts.includes(district);
+export function isValidRegionArea(region: string, area: string): boolean {
+    const areas = SHIPPING_REGIONS[region];
+    if (!areas) return false;
+    return areas.includes(area);
 }
 
-export function isValleyDistrict(district: string): boolean {
-    return VALLEY_DISTRICTS.includes(district);
+export function isCoreUrbanArea(area: string): boolean {
+    return CORE_URBAN_AREAS.includes(area);
 }

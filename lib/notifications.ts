@@ -135,15 +135,15 @@ export async function sendOrderNotificationEmail(order: { id: string; customerNa
 
   try {
     await resend.emails.send({
-      from: 'Luxe Moon Orders <orders@luxemoon.com.np>',
-      to: ['admin@luxemoon.com.np'],
+      from: 'Luxe Moon Orders <orders@luxemoonbeauty.com>',
+      to: ['admin@luxemoonbeauty.com'],
       subject: `New Order #${order.id.slice(-8).toUpperCase()} from ${order.customerName}`,
       html: `
         <h1>New Order Received</h1>
         <p><strong>Customer:</strong> ${order.customerName}</p>
         <p><strong>Phone:</strong> ${order.phone}</p>
         <p><strong>Total:</strong> NPR ${order.total.toLocaleString()}</p>
-        <p><a href="https://luxemoon.com.np/admin">View in Dashboard</a></p>
+        <p><a href="https://www.luxemoonbeauty.com/admin">View in Dashboard</a></p>
       `
     });
     logger.info('Order notification email sent', { orderId: order.id });
@@ -162,9 +162,9 @@ async function sendEmail(orderId: string, subject: string, html: string, fromEma
   try {
     await resend.emails.send({
       from: `Luxe Moon <${fromEmail}>`,
-      to: ['admin@luxemoon.com.np'],
+      to: ['admin@luxemoonbeauty.com'],
       subject,
-      html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">${html}<hr style="margin-top:20px;border:none;border-top:1px solid #eee;"/><p style="font-size:12px;color:#999;">Luxe Moon Nepal</p></div>`,
+      html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">${html}<hr style="margin-top:20px;border:none;border-top:1px solid #eee;"/><p style="font-size:12px;color:#999;">Luxe Moon</p></div>`,
     });
     logger.info('Status email sent', { orderId, subject });
   } catch (error) {

@@ -2,7 +2,7 @@
 
 import React, { useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { NEPAL_PROVINCES } from '@/lib/nepal-data';
+import { SHIPPING_REGIONS } from '@/lib/region-data';
 
 type AddressSuggestion = {
   display_name: string;
@@ -46,7 +46,7 @@ function inferProvinceDistrict(suggestion: AddressSuggestion): { province?: stri
     .filter(Boolean);
 
   let province: string | undefined;
-  const provinces = Object.keys(NEPAL_PROVINCES);
+  const provinces = Object.keys(SHIPPING_REGIONS);
 
   for (const currentProvince of provinces) {
     const normalizedProvince = normalizePlaceText(currentProvince);
@@ -56,7 +56,7 @@ function inferProvinceDistrict(suggestion: AddressSuggestion): { province?: stri
     }
   }
 
-  const districtPool = province ? NEPAL_PROVINCES[province] : provinces.flatMap((currentProvince) => NEPAL_PROVINCES[currentProvince]);
+  const districtPool = province ? SHIPPING_REGIONS[province] : provinces.flatMap((currentProvince) => SHIPPING_REGIONS[currentProvince]);
 
   let district: string | undefined;
   for (const currentDistrict of districtPool) {
@@ -68,7 +68,7 @@ function inferProvinceDistrict(suggestion: AddressSuggestion): { province?: stri
   }
 
   if (!province && district) {
-    province = provinces.find((currentProvince) => NEPAL_PROVINCES[currentProvince].includes(district));
+    province = provinces.find((currentProvince) => SHIPPING_REGIONS[currentProvince].includes(district));
   }
 
   return { province, district };
@@ -136,7 +136,7 @@ export default function AddressAutocompleteField({
       setAddressHintError('');
 
       try {
-        const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&countrycodes=np&limit=5`, {
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=5`, {
           signal: controller.signal,
         });
         if (!response.ok) throw new Error('Address lookup failed');

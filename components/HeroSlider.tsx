@@ -78,7 +78,7 @@ export const HeroSlider = ({ slides }: { slides: Slide[] }) => {
                         <Image
                             src={slide.image || "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"}
                             className={`object-cover object-center ${slide.mobileImage ? 'hidden md:block' : ''}`}
-                            alt={slide.title}
+                            alt={slide.title || "Luxe Moon Hero"}
                             fill
                             priority={index === 0}
                             sizes="100vw"
@@ -88,9 +88,9 @@ export const HeroSlider = ({ slides }: { slides: Slide[] }) => {
                             <Image
                                 src={slide.mobileImage}
                                 className="object-cover object-center block md:hidden"
-                                alt={slide.title}
+                                alt={slide.title || "Luxe Moon Hero Mobile"}
                                 fill
-                                priority={index === 0}
+                                priority={false}
                                 sizes="100vw"
                             />
                         )}

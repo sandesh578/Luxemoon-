@@ -5,12 +5,12 @@ import dynamic from 'next/dynamic';
 import { useCart, useLocationContext, useConfig, useI18n } from '@/components/Providers';
 import { useRouter } from 'next/navigation';
 import { Loader2, Truck, AlertCircle, Navigation2, User, Phone, Mail, MapPin } from 'lucide-react';
-import { getDistrictsForProvince, isValleyDistrict } from '@/lib/nepal-data';
+import { getAreasForRegion, isCoreUrbanArea } from '@/lib/region-data';
 import { z } from 'zod';
 
 const CheckoutFormSchema = z.object({
   customerName: z.string().trim().min(1, 'Please enter your full name so we know who to deliver to.'),
-  phone: z.string().trim().regex(/^9[78]\d{8}$/, 'Please enter a valid mobile number.'),
+  phone: z.string().trim().min(7, 'Please enter a valid mobile number.'),
   address: z.string().trim().min(1, 'Kindly provide your delivery address.'),
   province: z.string().optional(),
   district: z.string().optional(),
@@ -97,7 +97,7 @@ export default function CheckoutPage() {
   });
   const [deliveryZone, setDeliveryZone] = useState<'inside' | 'outside' | ''>('');
 
-  const districts = useMemo(() => getDistrictsForProvince(form.province), [form.province]);
+  const districts = useMemo(() => getAreasForRegion(form.province), [form.province]);
 
   // Auto-fill from user's default address (if logged in)
   useEffect(() => {
@@ -139,7 +139,7 @@ export default function CheckoutPage() {
   // Auto-detect valley when district changes
   useEffect(() => {
     if (form.district) {
-      const inValley = isValleyDistrict(form.district);
+      const inValley = isCoreUrbanArea(form.district);
       setInsideValley(inValley);
       setDeliveryZone(inValley ? 'inside' : 'outside');
     }
@@ -147,7 +147,7 @@ export default function CheckoutPage() {
 
   // Auto-clear district when province changes
   useEffect(() => {
-    const currentDistricts = getDistrictsForProvince(form.province);
+    const currentDistricts = getAreasForRegion(form.province);
     if (form.district && !currentDistricts.includes(form.district)) {
       setForm(prev => ({ ...prev, district: '' }));
     }

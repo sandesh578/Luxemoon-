@@ -7,7 +7,7 @@ import { logger } from '@/lib/logger';
 import { headers } from 'next/headers';
 import { calculateDiscountedPrice } from '@/lib/settings';
 import { getSiteConfig } from '@/lib/settings-server';
-import { NEPAL_PROVINCES, isValidProvinceDistrict } from '@/lib/nepal-data';
+import { SHIPPING_REGIONS, isValidRegionArea } from '@/lib/region-data';
 import { decimalToNumber, decimalToNumberOrNull } from '@/lib/decimal';
 import { getUserSession } from '@/lib/auth';
 
@@ -15,7 +15,7 @@ export const runtime = 'nodejs';
 
 const OrderSchema = z.object({
   customerName: z.string().min(1, 'Please enter your full name so we know who to deliver to.').max(100),
-  phone: z.string().regex(/^9[78]\d{8}$/, 'Please enter a valid mobile number (98XXXXXXXX).'),
+  phone: z.string().min(7, 'Please enter a valid mobile number.'),
   province: z.string().optional().default('N/A'),
   district: z.string().optional().default('N/A'),
   address: z.string().min(1, 'Kindly provide your delivery address.').max(500),

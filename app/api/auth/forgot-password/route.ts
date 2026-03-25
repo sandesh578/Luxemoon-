@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true });
     }
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.luxemoonbeauty.com';
     const resetToken = await encryptWithExpiration(
       { type: 'password_reset', userId: user.id, email: user.email },
       '15m'
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
 
     const resend = new Resend(resendKey);
     await resend.emails.send({
-      from: 'Luxe Moon <no-reply@luxemoon.com.np>',
+      from: 'Luxe Moon <no-reply@luxemoonbeauty.com>',
       to: [user.email],
       subject: 'Reset your Luxe Moon password',
       html: `

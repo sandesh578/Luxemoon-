@@ -9,7 +9,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   });
 
   const productEntries: MetadataRoute.Sitemap = products.map((product) => ({
-    url: `https://luxemoon.com.np/products/${product.slug}`,
+    url: `https://www.luxemoonbeauty.com/products/${product.slug}`,
     lastModified: product.updatedAt,
     changeFrequency: 'weekly',
     priority: 0.8,
@@ -17,19 +17,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return [
     {
-      url: 'https://luxemoon.com.np',
+      url: 'https://www.luxemoonbeauty.com',
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 1,
     },
     {
-      url: 'https://luxemoon.com.np/shop',
+      url: 'https://www.luxemoonbeauty.com/shop',
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 0.9,
     },
     {
-      url: 'https://luxemoon.com.np/about',
+      url: 'https://www.luxemoonbeauty.com/about',
       lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.5,

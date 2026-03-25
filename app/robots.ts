@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       disallow: '/admin/',
     },
-    sitemap: 'https://luxemoon.com.np/sitemap.xml',
+    sitemap: 'https://www.luxemoonbeauty.com/sitemap.xml',
   };
 }

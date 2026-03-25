@@ -48,11 +48,11 @@ const getProduct = unstable_cache(
             address: true,
             rating: true,
             comment: true,
-            verifiedPurchase: true,
+            // verifiedPurchase: true, // TEMPORARY: Disabled due to missing DB migration
             images: true,
             video: true,
             isFeatured: true,
-            isVerified: true,
+            // isVerified: true, // TEMPORARY: Disabled due to missing DB migration
             createdAt: true,
           },
         },
@@ -93,7 +93,8 @@ const getUnavailableSuggestions = unstable_cache(
       where: { isActive: true, isArchived: false, isDraft: false },
       select: { id: true, slug: true, name: true, priceInside: true, originalPrice: true, images: true },
       take: 4,
-      orderBy: { orderItems: { _count: 'desc' } }
+      // fallback if orderItems count fails
+      orderBy: { createdAt: 'desc' }
     });
     
     return JSON.parse(JSON.stringify(products)).map((p: any) => ({
